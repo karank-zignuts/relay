@@ -160,7 +160,11 @@ One easing, `cubic-bezier(0.22, 1, 0.36, 1)` (ease-out quint), and three duratio
 - Quick views (Mine, Unassigned, Blocked, Urgent, Hide done) toggle a single filter each and combine with every other filter. Active filters appear as removable chips.
 - Toasts are Ink pills with Eggshell text. Dialogs and drawers use a 20px radius, a hairline border and the whisper shadow.
 
-### 5.10 Breakpoints ⏳
+### 5.10 Emails
+
+Auth emails use the same language: Warm Taupe page, Eggshell card with a Stone hairline and 20px radius, Helvetica Neue light headline (Inter and Waldenburg are not safe in email clients), one black pill button, and a plain-text fallback link. They are generated from one layout in `scripts/build-email-templates.mjs` into `supabase/templates/`. Email HTML must stay table-based with inline styles.
+
+### 5.11 Breakpoints ⏳
 
 Desktop first (the table is the main work surface). Tablet and mobile web must remain usable for reading and commenting. Exact breakpoints are decided at implementation using Tailwind defaults.
 

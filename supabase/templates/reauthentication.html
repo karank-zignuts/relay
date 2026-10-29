@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Your confirmation code</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f3f1;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Enter this code to confirm it is you.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3f1" style="background:#f5f3f1;">
+  <tr><td align="center" style="padding:40px 16px 48px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+      <tr><td style="padding:0 6px 20px;font:300 24px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.02em;color:#000000;">Relay</td></tr>
+      <tr><td bgcolor="#fdfcfc" style="background:#fdfcfc;border:1px solid #ebe8e4;border-radius:20px;padding:40px 36px;">
+        <h1 style="margin:0 0 20px;font:300 30px/1.15 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.02em;color:#000000;">Confirm it is you</h1>
+        
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">{{ if .Data.full_name }}Hi {{ .Data.full_name }},{{ else }}Hi,{{ end }}</p>
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">Enter this code in Relay to confirm the change you are making:</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 8px;"><tr><td style="background:#f5f3f1;border-radius:12px;padding:18px 28px;font:500 32px/1 'SFMono-Regular',Menlo,Consolas,monospace;letter-spacing:0.28em;color:#000000;">{{ .Token }}</td></tr></table>
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;margin-top:16px;">The code expires soon. Never share it with anyone.</p>
+        <hr style="border:0;border-top:1px solid #ebe8e4;margin:28px 0 16px;">
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;font-size:13px;color:#777169;margin:0;">Did not request this? Ignore this email.</p>
+      </td></tr>
+      <tr><td style="padding:20px 6px 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">
+        Sent by Relay to {{ .Email }}.<br>
+        Relay turns your client's Slack channel into a task board your whole team can see.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

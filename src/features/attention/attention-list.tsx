@@ -3,7 +3,7 @@
 import { Check, ExternalLink, Inbox, PartyPopper, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isAwaitingReply, isForgotten, type WorkingHours } from "@/lib/attention";
 import { formatAge, formatDateTime, formatRelative } from "@/lib/format";
@@ -109,9 +109,10 @@ export function AttentionList() {
                 </p>
               </div>
               {task.slack_url ? (
-                <Button variant="outline" size="sm" nativeButton={false} render={<a href={task.slack_url} target="_blank" rel="noreferrer" />}>
+                <a href={task.slack_url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>
                   Reply in Slack <ExternalLink />
-                </Button>
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
               ) : null}
               <Button variant="ghost" size="sm" disabled={dismiss.isPending} onClick={() => dismiss.mutate({ taskId: task.id, dismissed: true })}>
                 <Check /> No reply needed

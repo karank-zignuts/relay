@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Confirm your new email</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f3f1;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Confirm the change of your Relay email address.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3f1" style="background:#f5f3f1;">
+  <tr><td align="center" style="padding:40px 16px 48px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+      <tr><td style="padding:0 6px 20px;font:300 24px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.02em;color:#000000;">Relay</td></tr>
+      <tr><td bgcolor="#fdfcfc" style="background:#fdfcfc;border:1px solid #ebe8e4;border-radius:20px;padding:40px 36px;">
+        <h1 style="margin:0 0 20px;font:300 30px/1.15 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.02em;color:#000000;">Confirm your new email</h1>
+        
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">{{ if .Data.full_name }}Hi {{ .Data.full_name }},{{ else }}Hi,{{ end }}</p>
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">You asked to change your Relay email address. Confirm the change to continue.</p>
+        
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px;background:#f5f3f1;border-radius:12px;">
+  <tr><td style="padding:16px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:3px 0;font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;width:96px;">From</td><td style="padding:3px 0;font:500 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">{{ .Email }}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:3px 0;font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;width:96px;">To</td><td style="padding:3px 0;font:500 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">{{ .NewEmail }}</td></tr></table></td></tr>
+</table>
+        
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px;">
+  <tr><td align="center" bgcolor="#000000" style="border-radius:999px;background:#000000;">
+    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:15px 30px;font:500 15px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fdfcfc;text-decoration:none;border-radius:999px;mso-padding-alt:0;">Confirm change</a>
+  </td></tr>
+</table>
+        
+<p style="margin:20px 0 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">Button not working? Copy this link into your browser:</p>
+<p style="margin:4px 0 0;font:400 12px/1.5 'SFMono-Regular',Menlo,Consolas,monospace;color:#44403b;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#44403b;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+        <hr style="border:0;border-top:1px solid #ebe8e4;margin:28px 0 16px;">
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;font-size:13px;color:#777169;margin:0;">Did not ask for this? Ignore this email and tell your admin, because someone may have access to your account.</p>
+      </td></tr>
+      <tr><td style="padding:20px 6px 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">
+        Sent by Relay to {{ .Email }}.<br>
+        Relay turns your client's Slack channel into a task board your whole team can see.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

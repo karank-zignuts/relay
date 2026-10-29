@@ -11,7 +11,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "e2e": "playwright test",
     "e2e:users": "node scripts/create-e2e-users.mjs",
-    "seed:demo": "node scripts/seed-demo.mjs"
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "emails:build": "node scripts/build-email-templates.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
