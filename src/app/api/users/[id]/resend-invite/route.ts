@@ -3,7 +3,7 @@ import { logActivity } from "@/lib/activity";
 import { apiError, emailError } from "@/lib/api-error";
 import { authorize } from "@/lib/auth/authorize";
 import { canManageRole } from "@/lib/auth/roles";
-import { publicEnv } from "@/lib/env";
+import { getAppUrl } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Context = { params: Promise<{ id: string }> };
@@ -27,7 +27,7 @@ export async function POST(_request: Request, { params }: Context) {
 
   const { error } = await admin.auth.admin.inviteUserByEmail(target.email, {
     data: { full_name: target.full_name, role: target.role },
-    redirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/set-password`,
+    redirectTo: `${getAppUrl()}/set-password`,
   });
   if (error) return emailError("resend-invite", error);
 
