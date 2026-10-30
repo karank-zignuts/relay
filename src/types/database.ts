@@ -50,6 +50,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           id: string
+          is_test: boolean
           summary: string
           updated_at: string
         }
@@ -63,6 +64,7 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: string
+          is_test?: boolean
           summary: string
           updated_at?: string
         }
@@ -76,6 +78,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: string
+          is_test?: boolean
           summary?: string
           updated_at?: string
         }
@@ -606,6 +609,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activity_is_test: {
+        Args: {
+          p_actor_id: string
+          p_entity_id: string
+          p_entity_type: string
+          p_label: string
+        }
+        Returns: boolean
+      }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]

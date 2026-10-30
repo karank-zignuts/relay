@@ -31,7 +31,10 @@ const VIEWS = [
 export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
   const user = useSession();
   const pathname = usePathname();
-  const view: "table" | "board" = pathname.startsWith("/board") ? "board" : "table";
+  const routeView: "table" | "board" = pathname.startsWith("/board") ? "board" : "table";
+  // The route changes a moment after the click. Show the chosen view at once, so the highlight never lingers on the old one.
+  const [chosen, setChosen] = useState<{ view: "table" | "board"; from: string } | null>(null);
+  const view = chosen && chosen.from === pathname ? chosen.view : routeView;
 
   const [filters, setFiltersRaw] = useState<TaskFilters>(EMPTY_FILTERS);
   const [sort, setSortRaw] = useState<SortState>(null);
@@ -112,7 +115,8 @@ export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
                 key={id}
                 href={href}
                 aria-current={view === id ? "page" : undefined}
-                className={cn("flex h-7 items-center gap-1.5 rounded-full px-3 text-sm transition-[background-color,color] duration-150", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
+                onClick={() => setChosen({ view: id, from: pathname })}
+                className={cn("flex h-7 items-center gap-1.5 rounded-full px-3 text-sm transition-colors duration-75", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
               >
                 <Icon className="size-4" /> {label}
               </Link>

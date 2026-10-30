@@ -4,7 +4,7 @@ import { Check, ExternalLink, Inbox, PartyPopper, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AttentionRowsSkeleton } from "@/components/page-skeletons";
 import { isAwaitingReply, isForgotten, type WorkingHours } from "@/lib/attention";
 import { formatAge, formatDateTime, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,7 @@ export function AttentionList() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 animate-page-in sm:px-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-8">
       <div>
         <h1 className="text-[32px] leading-[1.13] font-light tracking-[-0.02em]">Needs attention</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -71,11 +71,7 @@ export function AttentionList() {
       </div>
 
       {tasksQuery.isPending ? (
-        <div className="space-y-px overflow-hidden rounded-[20px] border border-border" aria-busy="true">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-[76px] w-full rounded-none" />
-          ))}
-        </div>
+        <AttentionRowsSkeleton />
       ) : tasksQuery.isError ? (
         <EmptyState icon={Inbox} title="Could not load threads" role="alert" action={<Button variant="outline" onClick={() => tasksQuery.refetch()}>Try again</Button>}>
           Check your connection and try again.

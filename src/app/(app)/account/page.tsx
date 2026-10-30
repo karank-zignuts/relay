@@ -6,7 +6,7 @@ export default async function AccountPage() {
   const user = await requireUser();
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-8 px-4 py-10 animate-page-in">
+    <div className="mx-auto w-full max-w-xl space-y-8 px-4 py-10">
       <div>
         <h1 className="text-[32px] leading-[1.13] font-light tracking-[-0.02em]">Account</h1>
         <p className="mt-1 text-sm text-muted-foreground">

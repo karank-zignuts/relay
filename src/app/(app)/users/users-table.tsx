@@ -58,7 +58,7 @@ export function UsersTable({ users, actorId, actorRole }: { users: ManagedUser[]
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 animate-page-in sm:px-8">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-8">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[32px] leading-[1.13] font-light tracking-[-0.02em]">Users</h1>
