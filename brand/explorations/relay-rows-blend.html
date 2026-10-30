@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Relay task rows blend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ember:#ff4704; --ink:#000; --graphite:#44403b; --smoke:#777169;
+    --stone:#ebe8e4; --taupe:#f5f3f1; --egg:#fdfcfc; --night:#0c0b0a;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{width:1536px;height:440px;background:var(--taupe);font-family:Inter,sans-serif;color:var(--graphite);position:relative;overflow:hidden}
+  .card{position:absolute;border-radius:20px;background:var(--egg);border:1px solid var(--stone)}
+  .top{top:20px;height:425px;width:368px}
+  .lbl{position:absolute;left:30px;top:26px;font-size:15px;color:var(--smoke);letter-spacing:.14px}
+  .lbl b{font-weight:400;color:var(--ash,#a59f97);margin-right:14px}
+  .logo{position:absolute;left:0;right:0;top:100px;height:130px;display:flex;align-items:center;justify-content:center;gap:16px}
+  .wm{font-weight:600;font-size:62px;letter-spacing:-.045em;line-height:1}
+  .sep{position:absolute;left:30px;right:30px;top:282px;height:1px;background:var(--stone)}
+  .icons{position:absolute;left:0;right:0;top:304px;display:flex;justify-content:space-around;padding:0 18px}
+  .ic{display:flex;flex-direction:column;align-items:center;gap:12px;font-size:14px;color:var(--smoke)}
+  .tile{width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center}
+  .tile.fav{background:var(--taupe);width:60px;height:60px;border-radius:14px;margin:6px 0}
+  .tile.out{border:1.5px solid var(--ember);background:var(--egg)}
+  .row2{top:461px;height:212px}
+  .dark{background:var(--night);border-color:var(--night);color:#fdfcfc}
+  .row2 h4,.load h4{position:absolute;left:30px;top:26px;font-size:17px;font-weight:400;letter-spacing:.14px}
+  .center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;padding-top:30px}
+  .grad{background:linear-gradient(120deg,#ff4704 0%,#ff5a2a 45%,#ff9a6e 100%);border:0}
+  .load{left:20px;top:689px;width:1496px;height:315px}
+  .frames{position:absolute;left:30px;top:70px;display:flex;gap:30px;align-items:flex-start}
+  .fr{display:flex;flex-direction:column;align-items:center;gap:16px;font-size:15px;color:#e8e5e1}
+  .fr .box{width:166px;height:158px;border-radius:20px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center}
+  .arrow{align-self:flex-start;margin-top:70px;color:#8f8a84;font-size:20px;margin-left:-14px;margin-right:-14px}
+  .vsep{position:absolute;left:1122px;top:30px;bottom:30px;width:1px;background:rgba(255,255,255,.1)}
+  .prev{position:absolute;left:1123px;right:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+  .prev .wm{font-size:44px;color:var(--ember)}
+  .dots{display:flex;gap:9px;margin-top:6px}
+  .dots i{width:9px;height:9px;border-radius:9px;background:var(--ember)}
+  .dots i:nth-child(2){opacity:.5}.dots i:nth-child(3){opacity:.22}
+  .cap{position:absolute;bottom:26px;font-size:15px;color:#e8e5e1}
+  svg{display:block;overflow:visible}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<!-- rows: three task rows with status glyphs -->
+<symbol id="rows" viewBox="0 0 64 64"><circle cx="13" cy="15" r="7" fill="var(--b)"/><circle cx="13" cy="32" r="5.5" fill="none" stroke="var(--a)" stroke-width="3.5"/><path d="M13 26.5A5.5 5.5 0 0 1 13 37.5Z" fill="var(--a)"/><circle cx="13" cy="49" r="5.5" fill="none" stroke="var(--a)" stroke-width="3.5"/><rect x="26" y="10" width="32" height="10" rx="5" fill="var(--a)"/><rect x="26" y="27" width="26" height="10" rx="5" fill="var(--a)"/><rect x="26" y="44" width="19" height="10" rx="5" fill="var(--a)"/></symbol>
+<!-- row R: status column as the stem, bowl, shifted row as the leg -->
+<symbol id="rowr" viewBox="0 0 64 64"><circle cx="12" cy="14" r="7" fill="var(--a)"/><circle cx="12" cy="32" r="5.5" fill="none" stroke="var(--a)" stroke-width="3.5"/><path d="M12 26.5A5.5 5.5 0 0 1 12 37.5Z" fill="var(--a)"/><circle cx="12" cy="50" r="5.5" fill="none" stroke="var(--a)" stroke-width="3.5"/><path d="M25 13H40A10.5 10.5 0 0 1 40 34H25" fill="none" stroke="var(--a)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 41L54 57" stroke="var(--b)" stroke-width="9" stroke-linecap="round"/></symbol>
+<!-- two rows -->
+<symbol id="rows2" viewBox="0 0 64 64"><circle cx="14" cy="22" r="8" fill="none" stroke="var(--a)" stroke-width="4.5"/><path d="M14 14A8 8 0 0 1 14 30Z" fill="var(--a)"/><rect x="29" y="16.5" width="31" height="11" rx="5.5" fill="var(--a)"/><circle cx="14" cy="44" r="8" fill="var(--b)"/><rect x="29" y="38.5" width="21" height="11" rx="5.5" fill="var(--a)"/></symbol>
+<!-- chip: single task row -->
+<symbol id="chip" viewBox="0 0 64 64"><circle cx="17" cy="32" r="11" fill="none" stroke="var(--a)" stroke-width="5.5"/><path d="M17 21A11 11 0 0 1 17 43Z" fill="var(--a)"/><rect x="36" y="26" width="24" height="12" rx="6" fill="var(--b)"/></symbol>
+<symbol id="ee" viewBox="0 0 40 40"><path d="M7 20A13 13 0 0 1 33 20Z" fill="var(--ember)"/><path d="M5 20H35M35 20A15 15 0 1 0 31.5 29.6" fill="none" stroke="var(--ink)" stroke-width="7" stroke-linecap="butt"/></symbol>
+</defs></svg>
+<style>.ee{display:inline-block;width:.68em;height:.68em;vertical-align:-.035em;margin:0 -.015em 0 -.01em}</style>
+<div class="card top" style="left:20px;top:20px;width:368px;height:400px"><div class="lbl"><b>09A</b>Row R</div><div class="logo" style="top:80px"><div class="tile" style="background:#ff4704;width:92px;height:92px;border-radius:24px;"><svg width="62" height="62" style="--a:#fff;--b:#000"><use href="#rowr"/></svg></div><span class="wm" style="color:#000;font-size:58px">Relay</span></div><div class="sep" style="top:240px"></div><div class="icons" style="top:262px"><div class="ic"><div class="tile" style="background:#ff4704;width:72px;height:72px;border-radius:18px;"><svg width="46" height="46" style="--a:#fff;--b:#000"><use href="#rowr"/></svg></div>App Icon</div><div class="ic"><div class="tile fav" style=""><svg width="32" height="32" style="--a:#ff4704;--b:#000"><use href="#rowr"/></svg></div>Favicon</div><div class="ic"><div class="tile out" style="border-color:var(--ember)"><svg width="46" height="46" style="--a:#ff4704;--b:#000"><use href="#rowr"/></svg></div>Icon (Outline)</div></div></div><div class="card top" style="left:404px;top:20px;width:368px;height:400px"><div class="lbl"><b>09B</b>Status “e”</div><div class="logo" style="top:80px"><div class="tile" style="background:#ff4704;width:92px;height:92px;border-radius:24px;"><svg width="62" height="62" style="--a:#fff;--b:#000"><use href="#rows"/></svg></div><span class="wm" style="color:#000;font-size:58px">R<svg class="ee"><use href="#ee"/></svg>lay</span></div><div class="sep" style="top:240px"></div><div class="icons" style="top:262px"><div class="ic"><div class="tile" style="background:#ff4704;width:72px;height:72px;border-radius:18px;"><svg width="46" height="46" style="--a:#fff;--b:#000"><use href="#rows"/></svg></div>App Icon</div><div class="ic"><div class="tile fav" style=""><svg width="32" height="32" style="--a:#ff4704;--b:#000"><use href="#rows"/></svg></div>Favicon</div><div class="ic"><div class="tile out" style="border-color:var(--ember)"><svg width="46" height="46" style="--a:#ff4704;--b:#000"><use href="#rows"/></svg></div>Icon (Outline)</div></div></div><div class="card top" style="left:788px;top:20px;width:368px;height:400px"><div class="lbl"><b>09C</b>List Entry</div><div class="logo" style="top:80px"><div class="tile" style="background:#000;width:92px;height:92px;border-radius:24px;"><svg width="62" height="62" style="--a:#ff4704;--b:#fdfcfc"><use href="#rows2"/></svg></div><div><span class="wm" style="color:#000;font-size:58px">Relay</span><span style="display:block;height:9px;width:120px;border-radius:9px;background:var(--stone);margin-top:8px"></span><span style="display:block;height:9px;width:72px;border-radius:9px;background:var(--stone);margin-top:7px"></span></div></div><div class="sep" style="top:240px"></div><div class="icons" style="top:262px"><div class="ic"><div class="tile" style="background:#000;width:72px;height:72px;border-radius:18px;"><svg width="46" height="46" style="--a:#ff4704;--b:#fdfcfc"><use href="#rows2"/></svg></div>App Icon</div><div class="ic"><div class="tile fav" style=""><svg width="32" height="32" style="--a:#ff4704;--b:#000"><use href="#rows2"/></svg></div>Favicon</div><div class="ic"><div class="tile out" style="border-color:#000"><svg width="46" height="46" style="--a:#000;--b:#ff4704"><use href="#rows2"/></svg></div>Icon (Outline)</div></div></div><div class="card top" style="left:1172px;top:20px;width:344px;height:400px"><div class="lbl"><b>09D</b>Row Chip</div><div class="logo" style="top:80px"><div style="display:flex;align-items:center;gap:14px;background:var(--ember);height:84px;border-radius:42px;padding:0 34px 0 22px"><svg width="52" height="52" style="--a:#fff;--b:#000"><use href="#chip"/></svg><span class="wm" style="color:#fff;font-size:54px">Relay</span></div></div><div class="sep" style="top:240px"></div><div class="icons" style="top:262px"><div class="ic"><div class="tile" style="background:#ff4704;width:72px;height:72px;border-radius:18px;"><svg width="50" height="50" style="--a:#fff;--b:#000"><use href="#chip"/></svg></div>App Icon</div><div class="ic"><div class="tile fav" style=""><svg width="34" height="34" style="--a:#ff4704;--b:#000"><use href="#chip"/></svg></div>Favicon</div><div class="ic"><div class="tile out" style=""><svg width="48" height="48" style="--a:#ff4704;--b:#000"><use href="#chip"/></svg></div>Icon (Outline)</div></div></div></body></html>

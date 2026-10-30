@@ -1,8 +1,10 @@
+import { RelayLogo } from "@/components/brand/relay-brand";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <main className="grid flex-1 lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden flex-col justify-between border-r border-border bg-secondary p-12 lg:flex">
-        <p className="text-xl font-light tracking-[-0.02em]">Relay</p>
+        <RelayLogo className="h-9 self-start" />
         <div className="max-w-md">
           <h2 className="text-5xl leading-[1.08] font-light tracking-[-0.02em] text-balance">Every client message, tracked.</h2>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">Nothing forgotten. One calm place for the whole team to see what the client asked, who owns it, and what still needs a reply.</p>
@@ -22,7 +24,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </section>
       <section className="flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm animate-page-in">
-          <p className="mb-10 text-xl font-light tracking-[-0.02em] lg:hidden">Relay</p>
+          <RelayLogo className="mb-10 h-8 lg:hidden" />
           {children}
         </div>
       </section>

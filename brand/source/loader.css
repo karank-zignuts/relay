@@ -1,0 +1,37 @@
+/* Relay loader. Base styles are the finished logo, so reduced-motion users see it still. Duration 3.2s, loops. */
+.rl-ember,
+.rl-ink-bl,
+.rl-ink-tr {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rl-anim .rl-ember { animation: rl-ember 3.2s infinite; }
+  .rl-anim .rl-ink-bl { animation: rl-ink-bl 3.2s infinite; }
+  .rl-anim .rl-ink-tr { animation: rl-ink-tr 3.2s infinite; }
+  .rl-anim .rl-leg { animation: rl-leg 3.2s infinite; }
+}
+@keyframes rl-ember {
+  0% { opacity: 0; transform: translate(24px, 24px) scale(0.2); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  9%, 17% { opacity: 1; transform: translate(24px, 24px) scale(0.75); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  30%, 52% { opacity: 1; transform: translate(24px, 0) scale(1); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  68%, 88% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes rl-ink-bl {
+  0%, 17% { opacity: 0; transform: translate(24px, -24px) scale(0.4); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  30%, 52% { opacity: 1; transform: translate(24px, 0) scale(1); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  68%, 88% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes rl-ink-tr {
+  0%, 50% { opacity: 0; transform: scale(0.2); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  64%, 88% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes rl-leg {
+  0%, 52% { opacity: 0; stroke-dasharray: 0.01 100; }
+  58% { opacity: 1; stroke-dasharray: 0.01 100; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  76%, 88% { opacity: 1; stroke-dasharray: 100 100; }
+  100% { opacity: 0; stroke-dasharray: 100 100; }
+}

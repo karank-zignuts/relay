@@ -50,7 +50,7 @@ function layout({ title, preheader, heading, body }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${TAUPE}" style="background:${TAUPE};">
   <tr><td align="center" style="padding:40px 16px 48px;">
     <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
-      <tr><td style="padding:0 6px 20px;font:300 24px/1 ${FONT};letter-spacing:-0.02em;color:${INK};">Relay</td></tr>
+      <tr><td style="padding:0 6px 20px;font:600 24px/1 ${FONT};letter-spacing:-0.03em;color:${INK};"><a href="{{ .SiteURL }}" style="text-decoration:none;color:${INK};"><img src="{{ .SiteURL }}/brand/relay-logo.png" alt="Relay" width="120" height="34" style="display:block;border:0;outline:none;width:120px;height:34px;font:600 24px/1 ${FONT};color:${INK};"></a></td></tr>
       <tr><td bgcolor="${EGGSHELL}" style="background:${EGGSHELL};border:1px solid ${STONE};border-radius:20px;padding:40px 36px;">
         <h1 style="margin:0 0 20px;font:300 30px/1.15 ${FONT};letter-spacing:-0.02em;color:${INK};">${heading}</h1>
         ${body}
