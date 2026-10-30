@@ -1,4 +1,3 @@
-import { SHOW_TEST_USERS } from "@/features/users/test-users";
 import { createClient } from "@/lib/supabase/client";
 import type { toRpcArgs } from "./filters";
 import type { Attachment, Comment, CommentRead, Task, TaskLite, TaskPage, TaskUpdate, TeamMember } from "./types";
@@ -64,9 +63,10 @@ export async function listTags(): Promise<string[]> {
   return [...new Set(data.flatMap((row) => row.tags))].sort();
 }
 
-export async function listTeam(): Promise<TeamMember[]> {
+/** Test accounts are left out unless the viewer is one. The database enforces the same rule, this keeps it true before that is in place. */
+export async function listTeam(viewerIsTest = false): Promise<TeamMember[]> {
   let query = createClient().from("profiles").select("id, full_name, email, role, is_active, slack_user_id").order("full_name");
-  if (!SHOW_TEST_USERS) query = query.eq("is_test", false);
+  if (!viewerIsTest) query = query.eq("is_test", false);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;

@@ -179,6 +179,8 @@ All four share the 12px radius, hairline border and whisper shadow of the menus.
 - **`Tip`** (`components/ui/tip.tsx`) is the only tooltip. Never use the `title` attribute for explanation.
 - **Pointer:** everything clickable shows a pointing hand, including dropdown options (global rule in `globals.css`). Disabled shows not-allowed.
 - **Focus** is graphite (`--ring`), never blue. **Drag and drop** uses Ember: a dashed placeholder where the card will land, and a faint Ember outline on the target column.
+- **Board scrolling:** sideways movement belongs to the whole board, never to a column. A two-finger sideways swipe or Shift + wheel scrolls the board wherever the pointer is; a plain vertical wheel scrolls the column under it. Columns never scroll sideways. A small overview in the bottom-right corner (a sliver per column and a window for what is on screen) appears when the columns do not fit; click to jump, drag the window, or use arrow keys, Home and End (`BoardMinimap`).
+- **Activity feed:** filters for type, people (including “Claude & system”), and time (Last hour, Today, Yesterday, 7 and 30 days, or a custom range with date pickers and 24-hour `HH:MM` fields; a bad time is flagged and ignored), plus search, all applied on the server so paging stays correct. Each day's header is sticky and the next day's takes over as you scroll. “Clear filters” appears when any filter is on.
 - **Realtime:** the nav shows a Live dot. Changes by others appear without reload.
 - **Skeletons mirror the real layout** (same columns, row height, card shape) so nothing shifts when data arrives.
 

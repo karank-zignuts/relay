@@ -1,7 +1,7 @@
 "use client";
 
 import { GripVertical, MessageSquare, Paperclip } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/components/session-provider";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import type { SortState, TaskFilters } from "../filters";
 import { useBoardColumn, useMoveTask } from "../queries";
 import { assigneeIds, attachmentCount, commentCount, type Task, type TeamMember } from "../types";
 import { AssigneeCell, ModuleCell, PriorityCell } from "./task-cells";
+import { BoardMinimap } from "./board-minimap";
 import { StatusGlyph } from "./task-chips";
 
 type Drag = { task: Task; height: number };
@@ -80,12 +81,29 @@ export function KanbanBoard({
   const [drag, setDrag] = useState<Drag | null>(null);
   const [over, setOver] = useState<Over>(null);
   const [totals, setTotals] = useState<Partial<Record<TaskStatus, number>>>({});
+  const scroller = useRef<HTMLDivElement>(null);
+  const scrollerId = useId();
   const columns = STATUSES.filter((status) => !(hideDone && status === "done") && (filters.status.length === 0 || filters.status.includes(status)));
   const manual = sort === null;
 
   useEffect(() => {
     onTotals?.(columns.reduce((sum, status) => sum + (totals[status] ?? 0), 0));
   }, [totals, columns, onTotals]);
+
+  // Sideways movement belongs to the whole board and never to a column: a two-finger sideways swipe, or Shift + wheel, scrolls the
+  // board wherever the pointer is. A plain vertical wheel still scrolls the column under it. Needs a non-passive listener to cancel.
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      const sideways = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.shiftKey ? event.deltaY : 0;
+      if (!sideways) return;
+      event.preventDefault();
+      element.scrollLeft += sideways;
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, []);
 
   function drop(status: TaskStatus, rows: Task[]) {
     const current = drag;
@@ -117,29 +135,32 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="-mx-4 flex min-h-[320px] min-w-0 flex-1 snap-x gap-3 overflow-x-auto overflow-y-hidden px-4 pb-1 sm:-mx-6 sm:px-6" data-testid="kanban">
-      {columns.map((status) => (
-        <BoardColumn
-          key={status}
-          status={status}
-          filters={filters}
-          sort={sort}
-          team={team}
-          members={members}
-          drag={drag}
-          over={over}
-          manual={manual}
-          onOver={setOver}
-          onDragStart={setDrag}
-          onDragEnd={() => {
-            setDrag(null);
-            setOver(null);
-          }}
-          onDrop={drop}
-          onOpen={onOpen}
-          onTotal={(total) => setTotals((previous) => (previous[status] === total ? previous : { ...previous, [status]: total }))}
-        />
-      ))}
+    <div className="relative -mx-4 flex min-h-[320px] min-w-0 flex-1 sm:-mx-6">
+      <div ref={scroller} id={scrollerId} className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden px-4 pb-1 sm:px-6" data-testid="kanban">
+        {columns.map((status) => (
+          <BoardColumn
+            key={status}
+            status={status}
+            filters={filters}
+            sort={sort}
+            team={team}
+            members={members}
+            drag={drag}
+            over={over}
+            manual={manual}
+            onOver={setOver}
+            onDragStart={setDrag}
+            onDragEnd={() => {
+              setDrag(null);
+              setOver(null);
+            }}
+            onDrop={drop}
+            onOpen={onOpen}
+            onTotal={(total) => setTotals((previous) => (previous[status] === total ? previous : { ...previous, [status]: total }))}
+          />
+        ))}
+      </div>
+      <BoardMinimap scroller={scroller} controls={scrollerId} columns={columns.length} />
     </div>
   );
 }
@@ -223,7 +244,7 @@ function BoardColumn({
         onDrop(status, rows);
       }}
       className={cn(
-        "flex h-full min-h-0 w-[300px] shrink-0 snap-start flex-col gap-2 rounded-[20px] p-3 transition-[background-color,box-shadow] duration-150",
+        "flex h-full min-h-0 w-[300px] shrink-0 flex-col gap-2 rounded-[20px] p-3 transition-[background-color,box-shadow] duration-150",
         isOver ? "bg-stone/70 shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--ember)_45%,transparent)]" : "bg-secondary",
       )}
     >
@@ -234,7 +255,7 @@ function BoardColumn({
           {query.data ? total : "–"}
         </span>
       </h2>
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-0.5" data-testid="column-scroll">
+      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-y-contain pr-0.5" data-testid="column-scroll">
         {query.isLoading ? (
           <>
             <CardSkeleton lines={3} />

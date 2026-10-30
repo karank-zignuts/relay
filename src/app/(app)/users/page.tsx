@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { can } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
-import { SHOW_TEST_USERS } from "@/features/users/test-users";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { UsersTable, type ManagedUser } from "./users-table";
 
@@ -11,7 +10,7 @@ export default async function UsersPage() {
 
   const admin = createAdminClient();
   const [{ data: profiles }, { data: authList }] = await Promise.all([
-    (SHOW_TEST_USERS ? admin.from("profiles").select("*") : admin.from("profiles").select("*").eq("is_test", false)).is("deleted_at", null).order("created_at"),
+    (actor.isTest ? admin.from("profiles").select("*") : admin.from("profiles").select("*").eq("is_test", false)).is("deleted_at", null).order("created_at"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 

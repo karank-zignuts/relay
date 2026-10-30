@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSession } from "@/components/session-provider";
 import { createClient } from "@/lib/supabase/client";
 import * as api from "./api";
 import type { TaskStatus } from "./constants";
@@ -61,7 +62,10 @@ export function useTask(id: string | null) {
 export const useTaskCounts = () => useQuery({ queryKey: ["tasks", "counts"] as const, queryFn: api.getTaskCounts, placeholderData: keepPreviousData });
 export const useTaskLite = () => useQuery({ queryKey: taskKeys.lite, queryFn: api.listTaskLite, staleTime: 60_000 });
 export const useAttention = () => useQuery({ queryKey: taskKeys.attention, queryFn: api.listAttentionCandidates });
-export const useTeam = () => useQuery({ queryKey: taskKeys.team, queryFn: api.listTeam, staleTime: 5 * 60_000 });
+export function useTeam() {
+  const { isTest } = useSession();
+  return useQuery({ queryKey: [...taskKeys.team, isTest], queryFn: () => api.listTeam(isTest), staleTime: 5 * 60_000 });
+}
 export const useModules = () => useQuery({ queryKey: taskKeys.modules, queryFn: api.listModules, staleTime: 60_000 });
 export const useTags = () => useQuery({ queryKey: taskKeys.tags, queryFn: api.listTags, staleTime: 60_000 });
 export const useComments = (taskId: string) => useQuery({ queryKey: taskKeys.comments(taskId), queryFn: () => api.listComments(taskId) });

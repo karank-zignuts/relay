@@ -8,6 +8,8 @@ export type SessionUser = {
   email: string;
   fullName: string;
   role: UserRole;
+  /** An automated-test account. Test data is hidden from everyone else. */
+  isTest: boolean;
 };
 
 /** Signed-in, active user with a profile, or null. A deactivated or deleted user cannot read their own profile (RLS), so they resolve to null. */
@@ -20,12 +22,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, is_active")
+    .select("id, email, full_name, role, is_active, is_test")
     .eq("id", user.id)
     .maybeSingle();
 
   if (!profile || !profile.is_active) return null;
-  return { id: profile.id, email: profile.email, fullName: profile.full_name, role: profile.role };
+  return { id: profile.id, email: profile.email, fullName: profile.full_name, role: profile.role, isTest: profile.is_test };
 }
 
 export async function requireUser(): Promise<SessionUser> {
