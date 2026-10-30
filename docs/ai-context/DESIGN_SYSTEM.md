@@ -148,23 +148,35 @@ Waldenburg is a licensed font. Until it is licensed and added, use **Inter 300**
 
 ### 5.8 Motion
 
-One easing, `cubic-bezier(0.22, 1, 0.36, 1)` (ease-out quint), and three durations: **150ms** for hover, press and color changes; **200–300ms** for dialogs, drawers and popovers; **360ms** for the one-time page entrance (6px rise plus fade).
+One easing, `cubic-bezier(0.22, 1, 0.36, 1)` (ease-out quint), and short durations so the UI feels instant: **75ms** for hover, press and color changes; **100–150ms** for dialogs, drawers and popovers; **160ms** for the page entrance (6px rise plus fade). Actions never wait for the server: create, edit, delete, assign, dismiss and comment update the screen first (optimistic) and call the API after, rolling back with a message on failure. Loading uses shimmer placeholders, never spinners or blank screens.
 - Buttons and pills press to `scale(0.97)`. Skeletons shimmer. New chips, comments and empty states "pop" in (220ms).
 - Optimistic updates: status changes appear instantly and roll back with a toast if the server refuses them.
 - Nothing animates for its own sake. `prefers-reduced-motion` collapses every animation and transition to near zero.
 
 ### 5.9 Density and interaction (decided 2026-10-29)
 
+- **Compact header.** The title, counts, search and quick views take one slim row. The arrow beside the title opens the dropdown filters (remembered per browser). Board is reached from the Table/Board switch inside Tasks, not the top menu.
+- **Fit the screen.** Tasks, Board and Activity never scroll the page. The table rows, each board column and the activity feed scroll inside their own area; headers stay pinned.
+- **Resizable task panel.** Hover the left edge of the task panel to see a line, drag to resize (remembered), double-click to widen or restore, drag it away to close.
 - Table rows have two densities, **Comfortable** (default) and **Compact**, remembered per browser. Header row is sticky, the whole row opens the task, and row actions appear on hover or focus.
 - Keyboard: `/` focuses search, `N` opens New task, `Esc` closes drawers and dialogs, `⌘/Ctrl + S` saves the open task, `⌘/Ctrl + Enter` sends a comment.
 - Quick views (Mine, Unassigned, Blocked, Urgent, Hide done) toggle a single filter each and combine with every other filter. Active filters appear as removable chips.
 - Toasts are Ink pills with Eggshell text. Dialogs and drawers use a 20px radius, a hairline border and the whisper shadow.
 
-### 5.10 Emails
+### 5.10 Dropdowns (one primitive each)
+
+Never use native `<select>`, `<datalist>` or `<input type="date">`: browsers render them in their own style and Relay cannot theme them. Use:
+- `OptionSelect` (`components/ui/option-select.tsx`) for choosing one value. `variant="field"` in forms, `variant="pill"` in filter bars. Options can carry an icon (status and priority glyphs).
+- `SuggestInput` for free text with suggestions (e.g. module).
+- `DatePicker` for dates (value `yyyy-mm-dd`).
+- `MultiSelectFilter` for choosing several values.
+All four share the 12px radius, hairline border and whisper shadow of the menus. Tests open them by label and click the option (`choose()` in `e2e/helpers.ts`).
+
+### 5.11 Emails
 
 Auth emails use the same language: Warm Taupe page, Eggshell card with a Stone hairline and 20px radius, Helvetica Neue light headline (Inter and Waldenburg are not safe in email clients), one black pill button, and a plain-text fallback link. They are generated from one layout in `scripts/build-email-templates.mjs` into `supabase/templates/`. Email HTML must stay table-based with inline styles.
 
-### 5.11 Breakpoints ⏳
+### 5.12 Breakpoints ⏳
 
 Desktop first (the table is the main work surface). Tablet and mobile web must remain usable for reading and commenting. Exact breakpoints are decided at implementation using Tailwind defaults.
 

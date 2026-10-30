@@ -3,10 +3,10 @@ import { ROLES, authFile, type Role } from "./roles";
 
 // What each role may see. The same rules are enforced by the server and RLS (see rls.spec.ts).
 const NAV: Record<Role, { visible: string[]; hidden: string[] }> = {
-  super_admin: { visible: ["Tasks", "Board", "Needs attention", "Activity", "Users", "Settings"], hidden: [] },
-  project_manager: { visible: ["Tasks", "Board", "Needs attention", "Activity", "Users"], hidden: ["Settings"] },
-  developer: { visible: ["Tasks", "Board", "Needs attention"], hidden: ["Activity", "Users", "Settings"] },
-  tester: { visible: ["Tasks", "Board", "Needs attention"], hidden: ["Activity", "Users", "Settings"] },
+  super_admin: { visible: ["Tasks", "Needs attention", "Activity", "Users", "Settings"], hidden: [] },
+  project_manager: { visible: ["Tasks", "Needs attention", "Activity", "Users"], hidden: ["Settings"] },
+  developer: { visible: ["Tasks", "Needs attention"], hidden: ["Activity", "Users", "Settings"] },
+  tester: { visible: ["Tasks", "Needs attention"], hidden: ["Activity", "Users", "Settings"] },
 };
 
 for (const role of Object.keys(ROLES) as Role[]) {

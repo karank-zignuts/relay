@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 
 const NAV: { href: string; label: string; permission?: Permission }[] = [
   { href: "/tasks", label: "Tasks" },
-  { href: "/board", label: "Board" },
   { href: "/attention", label: "Needs attention" },
   { href: "/activity", label: "Activity", permission: "activity.view" },
   { href: "/users", label: "Users", permission: "users.manage" },

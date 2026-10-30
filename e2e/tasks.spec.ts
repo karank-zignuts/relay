@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { asRole } from "./roles";
-import { uid } from "./helpers";
+import { choose, uid } from "./helpers";
 
 asRole("project_manager");
 test.describe.configure({ mode: "serial" });
@@ -9,10 +9,11 @@ const title = `E2E task ${uid()}`;
 
 test("creates a task and finds it with search", async ({ page }) => {
   await page.goto("/tasks");
+  await page.getByTestId("task-row").first().waitFor({ timeout: 45_000 }); // let the first load finish, or it can land after the create
   await page.getByRole("button", { name: "New task" }).click();
-  await page.getByLabel("Title").fill(title);
-  await page.getByLabel("Description").fill("Created from the e2e suite");
-  await page.getByLabel("Module").fill("E2E");
+  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page.getByLabel("Description", { exact: true }).fill("Created from the e2e suite");
+  await page.getByLabel("Module", { exact: true }).fill("E2E");
   await page.getByRole("button", { name: "Create task" }).click();
   await expect(page.getByText("Task created")).toBeVisible();
 
@@ -24,6 +25,7 @@ test("creates a task and finds it with search", async ({ page }) => {
 test("filters narrow the table and clear again", async ({ page }) => {
   await page.goto("/tasks");
   await page.getByLabel("Search tasks").fill(title);
+  await page.getByRole("button", { name: "Show filters" }).click();
   await page.getByRole("button", { name: "Filter by Status" }).click();
   await page.getByRole("menuitemcheckbox", { name: /^Done/ }).click();
   await page.keyboard.press("Escape");
@@ -39,8 +41,8 @@ test("edits status, assigns a person and comments", async ({ page }) => {
   await page.getByTestId("task-row").filter({ hasText: title }).click();
 
   const drawer = page.getByTestId("task-drawer");
-  await drawer.getByLabel("Status", { exact: true }).selectOption("in_progress");
-  await drawer.getByLabel("Priority", { exact: true }).selectOption("urgent");
+  await choose(drawer, "Status", "In progress");
+  await choose(drawer, "Priority", "Urgent");
   await drawer.getByText("Staging", { exact: true }).click();
   await drawer.getByText("FE", { exact: true }).click();
   await drawer.getByText("E2E developer").click();
@@ -88,4 +90,28 @@ test("activity log recorded the lifecycle", async ({ page }) => {
   await page.getByLabel("Search activity").fill(title);
   await expect(page.getByTestId("activity-row").filter({ hasText: "Created task" })).toBeVisible();
   await expect(page.getByTestId("activity-row").filter({ hasText: "Deleted task" })).toBeVisible();
+});
+
+test("themed dropdowns: select, suggestions and date picker", async ({ page }) => {
+  await page.goto("/tasks");
+  await page.getByTestId("task-row").first().waitFor({ timeout: 45_000 });
+
+  // Date picker: open, pick a day, see it applied as a removable state, clear it.
+  await page.getByRole("button", { name: "Show filters" }).click();
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "From date" }).click();
+  await page.getByRole("button", { name: /^\d{1,2} \w{3} \d{4}$/ }).first().click();
+  await expect(page.getByRole("button", { name: "From date" })).not.toContainText("Any date");
+
+  // Select: filters the table without any native <select> on the page.
+  await expect(page.locator("select")).toHaveCount(0);
+  await choose(page, "Jira filter", "Has Jira ticket");
+  await expect(page.getByTestId("task-count")).toContainText("of");
+
+  // Suggest input: module field offers existing modules but accepts new text.
+  await page.getByRole("button", { name: "Clear 3 filters" }).or(page.getByRole("button", { name: /^Clear \d+ filters?$/ })).click();
+  await page.getByTestId("task-row").first().click();
+  const moduleInput = page.getByTestId("task-drawer").getByLabel("Module", { exact: true });
+  await moduleInput.fill("Brand new module name");
+  await expect(moduleInput).toHaveValue("Brand new module name");
 });

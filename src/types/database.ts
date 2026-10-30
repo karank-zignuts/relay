@@ -178,6 +178,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          is_test: boolean
           role: Database["public"]["Enums"]["user_role"]
           slack_user_id: string | null
           updated_at: string
@@ -190,6 +191,7 @@ export type Database = {
           full_name?: string
           id: string
           is_active?: boolean
+          is_test?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           slack_user_id?: string | null
           updated_at?: string
@@ -202,6 +204,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          is_test?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           slack_user_id?: string | null
           updated_at?: string
@@ -478,6 +481,7 @@ export type Database = {
       }
       is_admin_or_pm: { Args: never; Returns: boolean }
       is_assigned: { Args: { p_task_id: string }; Returns: boolean }
+      is_privileged_caller: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       log_activity: {
         Args: {

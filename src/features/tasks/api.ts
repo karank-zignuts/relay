@@ -1,3 +1,4 @@
+import { SHOW_TEST_USERS } from "@/features/users/test-users";
 import { createClient } from "@/lib/supabase/client";
 import type { Comment, Task, TaskUpdate, TeamMember } from "./types";
 import type { TaskChangeArea, TaskEnv, TaskPriority, TaskStatus } from "./constants";
@@ -24,10 +25,9 @@ export async function listTasks(): Promise<Task[]> {
 }
 
 export async function listTeam(): Promise<TeamMember[]> {
-  const { data, error } = await createClient()
-    .from("profiles")
-    .select("id, full_name, email, role, is_active, slack_user_id")
-    .order("full_name");
+  let query = createClient().from("profiles").select("id, full_name, email, role, is_active, slack_user_id").order("full_name");
+  if (!SHOW_TEST_USERS) query = query.eq("is_test", false);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
 }

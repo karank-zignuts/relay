@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, LayoutGrid, Plus, SearchX, Table2 } from "lucide-react";
+import { ChevronDown, Inbox, LayoutGrid, Plus, SearchX, Table2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -8,6 +8,7 @@ import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { can } from "@/lib/auth/roles";
+import { usePersisted } from "@/lib/use-persisted";
 import { cn } from "@/lib/utils";
 import { EMPTY_FILTERS, filterTasks, sortTasks, type SortDirection, type SortKey, type TaskFilters } from "../filters";
 import { useTasks, useTasksRealtime, useTeam } from "../queries";
@@ -28,6 +29,8 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
   const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({ key: "task_date", direction: "desc" });
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  // The header is compact by default so the work area gets the screen. The arrow next to the title opens the filters.
+  const [expanded, setExpanded] = usePersisted<boolean>("relay.filters-open", false);
   const canCreate = can(user.role, "tasks.create");
 
   // "/" jumps to search, "n" starts a new task. Both are ignored while typing.
@@ -56,22 +59,26 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
   const onSort = (key: SortKey) => setSort((previous) => ({ key, direction: previous.key === key && previous.direction === "asc" ? "desc" : "asc" }));
 
   return (
-    <div className="mx-auto w-full max-w-[1680px] space-y-6 px-4 py-8 animate-page-in sm:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[32px] font-light leading-[1.13] tracking-[-0.02em]">{view === "table" ? "Tasks" : "Board"}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            {tasksQuery.isSuccess ? (
-              <>
-                <span className="tabular-nums">{open}</span> open · <span className="tabular-nums">{tasks.length}</span> total, from the client&apos;s Slack channel
-              </>
-            ) : (
-              "Client requests from Slack, one row per message or thread."
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <nav aria-label="View" className="relative flex rounded-full border border-[#e5e5e5] bg-background p-0.5">
+    <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 flex-col gap-3 px-4 pt-4 pb-3 animate-page-in sm:px-6">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="text-2xl font-light leading-none tracking-[-0.02em]">{view === "table" ? "Tasks" : "Board"}</h1>
+        {tasksQuery.isSuccess ? (
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {open} open · {tasks.length} total
+          </span>
+        ) : null}
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label={expanded ? "Hide filters" : "Show filters"}
+          title={expanded ? "Hide filters" : "Show filters"}
+          onClick={() => setExpanded(!expanded)}
+          className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-secondary hover:text-foreground"
+        >
+          <ChevronDown className={cn("size-4 transition-transform duration-100", expanded && "rotate-180")} />
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <nav aria-label="View" className="flex rounded-full border border-[#e5e5e5] bg-background p-0.5">
             {(
               [
                 { href: "/tasks", id: "table", label: "Table", Icon: Table2 },
@@ -82,27 +89,27 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
                 key={id}
                 href={href}
                 aria-current={view === id ? "page" : undefined}
-                className={cn("flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors duration-150", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
+                className={cn("flex h-7 items-center gap-1.5 rounded-full px-3 text-sm transition-colors duration-75", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
               >
                 <Icon className="size-4" /> {label}
               </Link>
             ))}
           </nav>
           {canCreate ? (
-            <Button onClick={() => setCreating(true)}>
+            <Button size="sm" onClick={() => setCreating(true)}>
               <Plus /> New task
-              <kbd className="ml-1 hidden rounded-[4px] bg-background/20 px-1.5 font-mono text-[10px] sm:block">N</kbd>
+              <kbd className="ml-0.5 hidden rounded-[4px] bg-background/20 px-1.5 font-mono text-[10px] sm:block">N</kbd>
             </Button>
           ) : null}
         </div>
       </div>
 
       {tasksQuery.isLoading ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading tasks">
-          <Skeleton className="h-10 w-80 rounded-full" />
-          <div className="space-y-px overflow-hidden rounded-[20px] border border-border">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-[60px] w-full rounded-none" />
+        <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Loading tasks">
+          <Skeleton className="h-9 w-80 rounded-full" />
+          <div className="min-h-0 flex-1 space-y-px overflow-hidden rounded-[20px] border border-border">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <Skeleton key={index} className="h-[58px] w-full rounded-none" />
             ))}
           </div>
         </div>
@@ -112,7 +119,7 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
         </EmptyState>
       ) : (
         <>
-          <TaskFiltersBar tasks={tasks} team={team} filters={filters} onChange={setFilters} shown={shown.length} />
+          <TaskFiltersBar tasks={tasks} team={team} filters={filters} onChange={setFilters} shown={shown.length} expanded={expanded} />
           {tasks.length === 0 ? (
             <EmptyState icon={Inbox} title="No tasks yet" data-testid="empty-state" action={canCreate ? <Button onClick={() => setCreating(true)}><Plus /> New task</Button> : undefined}>
               Ask Claude to sync the client channel and every request lands here, one row per thread. You can also add a task by hand.
@@ -122,7 +129,7 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
               Try removing a filter or searching for something broader.
             </EmptyState>
           ) : view === "table" ? (
-            <TaskTable tasks={shown} team={teamById} sort={sort} onSort={onSort} onOpen={(task) => setOpenId(task.id)} activeId={openId} />
+            <TaskTable tasks={shown} team={teamById} sort={sort} onSort={onSort} onOpen={(task) => setOpenId(task.id)} activeId={openId} fetching={tasksQuery.isFetching} />
           ) : (
             <KanbanBoard tasks={shown} team={teamById} onOpen={(task) => setOpenId(task.id)} />
           )}

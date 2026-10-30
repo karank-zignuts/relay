@@ -6,7 +6,8 @@ import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { OptionSelect } from "@/components/ui/option-select";
 import { cn } from "@/lib/utils";
 import { AREA_LABELS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES } from "../constants";
 import { activeFilterCount, EMPTY_FILTERS, UNASSIGNED, type TaskFilters } from "../filters";
@@ -20,12 +21,14 @@ export function TaskFiltersBar({
   filters,
   onChange,
   shown,
+  expanded,
 }: {
   tasks: Task[];
   team: TeamMember[];
   filters: TaskFilters;
   onChange: (next: TaskFilters) => void;
   shown: number;
+  expanded: boolean;
 }) {
   const user = useSession();
   const set = <K extends keyof TaskFilters>(key: K, value: TaskFilters[K]) => onChange({ ...filters, [key]: value });
@@ -68,7 +71,7 @@ export function TaskFiltersBar({
   ];
 
   return (
-    <div className="space-y-3" role="search" aria-label="Filter tasks">
+    <div className="shrink-0 space-y-3" role="search" aria-label="Filter tasks">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-80">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -76,7 +79,7 @@ export function TaskFiltersBar({
             id="task-search"
             aria-label="Search tasks"
             placeholder="Search title, #number, module, Jira…"
-            className="h-10 rounded-full pr-9 pl-9"
+            className="h-9 rounded-full pr-9 pl-9"
             value={filters.search}
             onChange={(event) => set("search", event.target.value)}
           />
@@ -90,7 +93,7 @@ export function TaskFiltersBar({
               aria-pressed={view.on}
               onClick={view.toggle}
               className={cn(
-                "h-8 rounded-full border px-3.5 text-sm transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[0.97]",
+                "h-8 rounded-full border px-3.5 text-sm transition-[background-color,border-color,color,transform] duration-75 ease-out active:scale-[0.97]",
                 view.on ? "border-primary bg-primary text-primary-foreground" : "border-[#e5e5e5] bg-background text-graphite hover:border-ash hover:bg-secondary",
               )}
             >
@@ -103,6 +106,8 @@ export function TaskFiltersBar({
         </span>
       </div>
 
+      {expanded ? (
+        <div className="space-y-3 animate-pop">
       <div className="flex flex-wrap items-center gap-2">
         <MultiSelectFilter label="Status" selected={filters.status} onChange={(value) => set("status", value)} options={STATUSES.map((value) => ({ value, label: STATUS_LABELS[value], count: counts.status.get(value) ?? 0 }))} />
         <MultiSelectFilter label="Priority" selected={filters.priority} onChange={(value) => set("priority", value)} options={PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] }))} />
@@ -126,24 +131,39 @@ export function TaskFiltersBar({
 
       {moreOpen || moreActive ? (
         <div className="flex flex-wrap items-center gap-2 text-sm animate-pop">
-          <NativeSelect aria-label="Jira filter" className="h-8 w-auto rounded-full px-3" value={filters.jira} onChange={(event) => set("jira", event.target.value as TaskFilters["jira"])}>
-            <option value="any">Jira: any</option>
-            <option value="yes">Has Jira ticket</option>
-            <option value="no">No Jira ticket</option>
-          </NativeSelect>
-          <NativeSelect aria-label="Task level" className="h-8 w-auto rounded-full px-3" value={filters.level} onChange={(event) => set("level", event.target.value as TaskFilters["level"])}>
-            <option value="all">All tasks</option>
-            <option value="parents">Parent tasks only</option>
-            <option value="subtasks">Sub-tasks only</option>
-          </NativeSelect>
-          <label className="flex items-center gap-1.5 text-muted-foreground">
+          <OptionSelect
+            variant="pill"
+            aria-label="Jira filter"
+            value={filters.jira}
+            onValueChange={(value) => set("jira", value)}
+            options={[
+              { value: "any", label: "Jira: any" },
+              { value: "yes", label: "Has Jira ticket" },
+              { value: "no", label: "No Jira ticket" },
+            ]}
+          />
+          <OptionSelect
+            variant="pill"
+            aria-label="Task level"
+            value={filters.level}
+            onValueChange={(value) => set("level", value)}
+            options={[
+              { value: "all", label: "All tasks" },
+              { value: "parents", label: "Parent tasks only" },
+              { value: "subtasks", label: "Sub-tasks only" },
+            ]}
+          />
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             From
-            <Input type="date" aria-label="From date" className="h-8 w-36 rounded-full px-3" value={filters.from} onChange={(event) => set("from", event.target.value)} />
-          </label>
-          <label className="flex items-center gap-1.5 text-muted-foreground">
+            <DatePicker aria-label="From date" placeholder="Any date" value={filters.from} onValueChange={(value) => set("from", value)} />
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             To
-            <Input type="date" aria-label="To date" className="h-8 w-36 rounded-full px-3" value={filters.to} onChange={(event) => set("to", event.target.value)} />
-          </label>
+            <DatePicker aria-label="To date" placeholder="Any date" value={filters.to} onValueChange={(value) => set("to", value)} />
+          </span>
+        </div>
+      ) : null}
+
         </div>
       ) : null}
 

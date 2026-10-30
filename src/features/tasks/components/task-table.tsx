@@ -68,6 +68,7 @@ export function TaskTable({
   onSort,
   onOpen,
   activeId,
+  fetching = false,
 }: {
   tasks: Task[];
   team: Map<string, TeamMember>;
@@ -75,6 +76,7 @@ export function TaskTable({
   onSort: (key: SortKey) => void;
   onOpen: (task: Task) => void;
   activeId: string | null;
+  fetching?: boolean;
 }) {
   const user = useSession();
   const [hidden, setHidden] = usePersisted<string[]>(COLUMNS_KEY, DEFAULT_HIDDEN);
@@ -91,8 +93,8 @@ export function TaskTable({
   const toggleColumn = (id: string) => setHidden(hidden.includes(id) ? hidden.filter((item) => item !== id) : [...hidden, id]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-end gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 items-center justify-end gap-2">
         <Button variant="ghost" size="sm" aria-pressed={density === "compact"} onClick={() => setDensity(density === "compact" ? "comfortable" : "compact")}>
           <Rows3 /> {density === "compact" ? "Compact" : "Comfortable"}
         </Button>
@@ -110,8 +112,9 @@ export function TaskTable({
         </DropdownMenu>
       </div>
 
-      <div className="overflow-hidden rounded-[20px] border border-border bg-background">
-        <div className="max-h-[calc(100vh-22rem)] overflow-auto">
+      <div className="relative flex min-h-[320px] flex-1 flex-col overflow-hidden rounded-[20px] border border-border bg-background">
+        <div aria-hidden className={cn("absolute inset-x-0 top-0 z-20 h-0.5 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--ring),transparent)] bg-[length:200%_100%] transition-opacity duration-100", fetching ? "opacity-100" : "opacity-0")} />
+        <div className="min-h-0 flex-1 overflow-auto" data-testid="task-scroll">
           <Table data-testid="task-table" className={cn(density === "compact" && "[&_td]:py-1.5")}>
             <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_var(--border)]">
               <TableRow className="border-0 hover:bg-transparent">
@@ -178,7 +181,7 @@ export function TaskTable({
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between text-sm text-muted-foreground">
         <span className="tabular-nums">
           {tasks.length === 0 ? "" : `Showing ${current * PAGE_SIZE + 1}–${Math.min((current + 1) * PAGE_SIZE, tasks.length)} of ${tasks.length}`}
         </span>
@@ -207,7 +210,13 @@ export function TaskTable({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button variant="destructive" disabled={deleteTask.isPending} onClick={() => deleting && deleteTask.mutate(deleting.id, { onSuccess: () => setDeleting(null) })}>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleting) deleteTask.mutate(deleting.id);
+                setDeleting(null);
+              }}
+            >
               Delete task
             </Button>
           </AlertDialogFooter>

@@ -35,5 +35,5 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-  webServer: { command: `npm run dev -- -p ${new URL(BASE_URL).port || 3000}`, url: BASE_URL, reuseExistingServer: true, timeout: 180_000 },
+  webServer: { command: `npm run dev -- -p ${new URL(BASE_URL).port || 3000}`, url: BASE_URL, reuseExistingServer: true, timeout: 180_000, env: { NEXT_PUBLIC_SHOW_TEST_USERS: "1" } },
 });

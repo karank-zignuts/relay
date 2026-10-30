@@ -32,7 +32,7 @@ export function KanbanBoard({ tasks, team, onOpen }: { tasks: Task[]; team: Map<
   }
 
   return (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 sm:-mx-8 sm:px-8" data-testid="kanban">
+    <div className="-mx-4 flex min-h-[320px] min-w-0 flex-1 snap-x gap-3 overflow-x-auto overflow-y-hidden px-4 pb-1 sm:-mx-6 sm:px-6" data-testid="kanban">
       {STATUSES.map((status) => {
         const column = tasks.filter((task) => task.status === status);
         const isOver = over === status && dragging !== null;
@@ -52,7 +52,7 @@ export function KanbanBoard({ tasks, team, onOpen }: { tasks: Task[]; team: Map<
             }}
             onDrop={(event) => drop(event, status)}
             className={cn(
-              "flex w-[300px] shrink-0 snap-start flex-col gap-2 rounded-[20px] p-3 transition-[background-color,box-shadow] duration-200",
+              "flex h-full min-h-0 w-[300px] shrink-0 snap-start flex-col gap-2 rounded-[20px] p-3 transition-[background-color,box-shadow] duration-100",
               isOver ? "bg-stone shadow-[inset_0_0_0_1.5px_var(--ring)]" : "bg-secondary",
             )}
           >
@@ -61,6 +61,7 @@ export function KanbanBoard({ tasks, team, onOpen }: { tasks: Task[]; team: Map<
               {STATUS_LABELS[status]}
               <span className="ml-auto rounded-full bg-background px-2 py-0.5 text-xs font-normal text-muted-foreground tabular-nums">{column.length}</span>
             </h2>
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-0.5" data-testid="column-scroll">
             {column.length === 0 ? (
               <p className={cn("rounded-[12px] border border-dashed border-ash/60 px-3 py-8 text-center text-xs text-muted-foreground transition-colors", isOver && "border-ring text-foreground")}>
                 {isOver ? "Drop to move here" : "Nothing here"}
@@ -81,7 +82,7 @@ export function KanbanBoard({ tasks, team, onOpen }: { tasks: Task[]; team: Map<
                   setOver(null);
                 }}
                 className={cn(
-                  "group/card relative cursor-grab rounded-[12px] border border-border bg-background p-3.5 text-sm transition-[border-color,opacity,transform] duration-150 ease-out hover:border-ash active:cursor-grabbing",
+                  "group/card relative cursor-grab rounded-[12px] border border-border bg-background p-3.5 text-sm transition-[border-color,opacity,transform] duration-75 ease-out hover:border-ash active:cursor-grabbing",
                   dragging === task.id && "scale-[0.98] opacity-40",
                 )}
               >
@@ -116,6 +117,7 @@ export function KanbanBoard({ tasks, team, onOpen }: { tasks: Task[]; team: Map<
                 </div>
               </article>
             ))}
+            </div>
           </section>
         );
       })}

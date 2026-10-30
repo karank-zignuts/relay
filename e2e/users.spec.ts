@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { authFile } from "./roles";
-import { uid } from "./helpers";
+import { choose, uid } from "./helpers";
 
 test.describe("project manager", () => {
   test.use({ storageState: authFile("project_manager") });
@@ -8,7 +8,9 @@ test.describe("project manager", () => {
   test("cannot grant Super Admin and cannot manage Super Admins", async ({ page }) => {
     await page.goto("/users");
     await page.getByRole("button", { name: "Invite user" }).click();
-    const options = await page.getByLabel("Role").locator("option").allTextContents();
+    await page.getByLabel("Role", { exact: true }).click();
+    await page.getByRole("option").first().waitFor();
+    const options = await page.getByRole("option").allTextContents();
     expect(options).not.toContain("Super Admin");
     expect(options).toContain("Developer");
     await page.keyboard.press("Escape");
@@ -46,7 +48,7 @@ test.describe("super admin", () => {
     const self = page.getByTestId("user-row").filter({ hasText: "E2E super admin" });
     await self.getByRole("button", { name: /Actions for/ }).click();
     await page.getByRole("menuitem", { name: "Edit" }).click();
-    await expect(page.getByLabel("Role")).toBeDisabled();
+    await expect(page.getByLabel("Role", { exact: true })).toBeDisabled();
   });
 
   test("a mapped Slack ID auto-assigns the person on sync", async ({ page, request, playwright, baseURL }) => {
@@ -88,7 +90,7 @@ test.describe("super admin", () => {
     await page.getByRole("button", { name: "Invite user" }).click();
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Full name").fill("E2E Invitee");
-    await page.getByLabel("Role").selectOption("developer");
+    await choose(page, "Role", "Developer");
     await page.getByRole("button", { name: "Send invite" }).click();
     await expect(page.getByText("Invitation sent").or(page.getByText(/Too many emails/))).toBeVisible();
 

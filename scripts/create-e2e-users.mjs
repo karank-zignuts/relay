@@ -39,7 +39,7 @@ for (const role of roles) {
     if (error) throw error;
     user = data.user;
   }
-  const { error } = await admin.from("profiles").update({ role, full_name: fullName, is_active: true, deleted_at: null }).eq("id", user.id);
+  const { error } = await admin.from("profiles").update({ role, full_name: fullName, is_active: true, deleted_at: null, is_test: true }).eq("id", user.id);
   if (error) throw error;
   lines.push(`E2E_${role.toUpperCase()}_EMAIL=${email}`);
 }

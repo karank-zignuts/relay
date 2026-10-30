@@ -18,9 +18,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <SessionProvider user={user}>
-      <AppNav attentionCount={attentionCount} />
-      <SyncStatusBar />
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className="flex h-dvh flex-col">
+        <AppNav attentionCount={attentionCount} />
+        <SyncStatusBar />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
+      </div>
     </SessionProvider>
   );
 }

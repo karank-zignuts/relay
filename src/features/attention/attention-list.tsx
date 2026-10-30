@@ -87,7 +87,7 @@ export function AttentionList() {
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-[20px] border border-border bg-background" data-testid="attention-list">
           {rows.map((task) => (
-            <li key={task.id} className="group flex flex-wrap items-center gap-x-5 gap-y-2 p-5 transition-colors duration-150 hover:bg-secondary/60" data-testid="attention-row">
+            <li key={task.id} className="group flex flex-wrap items-center gap-x-5 gap-y-2 p-5 transition-colors duration-75 hover:bg-secondary/60" data-testid="attention-row">
               <div className="w-24 shrink-0">
                 <p className="text-2xl leading-none font-light tracking-[-0.02em] whitespace-nowrap tabular-nums" title={`Client wrote ${formatDateTime(task.last_client_message_at!)}`}>
                   {formatAge(task.last_client_message_at!)}

@@ -20,5 +20,6 @@ Do NOT drive the browser click by click with screenshots. Write or extend a Play
 Hard rules:
 - Slack is **read-only**. Never send, reply or react.
 - Never put secrets in the repo, the browser bundle or chat. Keys live in `.env.local`.
+- No native `<select>`, `<datalist>` or date inputs: use `OptionSelect`, `SuggestInput`, `DatePicker` (`DESIGN_SYSTEM.md` §5.10).
 - Deletes are soft. Permissions are enforced in RLS and the server, not only the UI.
 - Never invent design tokens or colors. Status, priority and env use the shape-based language in `DESIGN_SYSTEM.md` §5.3. Ember is the only signal color.

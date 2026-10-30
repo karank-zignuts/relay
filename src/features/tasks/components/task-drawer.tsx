@@ -7,18 +7,24 @@ import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionSelect } from "@/components/ui/option-select";
+import { SuggestInput } from "@/components/ui/suggest-input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { isAwaitingReply } from "@/lib/attention";
 import { taskEditScope } from "@/lib/auth/task-permissions";
 import { formatDateTime, initials } from "@/lib/format";
+import { usePersisted } from "@/lib/use-persisted";
 import { cn } from "@/lib/utils";
-import { AREA_LABELS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES, type TaskChangeArea, type TaskEnv, type TaskPriority, type TaskStatus } from "../constants";
+import { AREA_LABELS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, type TaskChangeArea, type TaskEnv, type TaskPriority, type TaskStatus } from "../constants";
 import { useDismissReply, useSetAssignees, useUpdateTask } from "../queries";
 import { assigneeIds, type Task, type TeamMember } from "../types";
 import { StatusChip } from "./task-chips";
+import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "./task-options";
 import { TaskComments } from "./task-comments";
+
+// OptionSelect needs a real value for "no parent", so the form keeps "" and the select uses this.
+const NO_PARENT = "none";
 
 type FormState = {
   title: string;
@@ -59,7 +65,7 @@ function TogglePill({ checked, onChange, disabled, children }: { checked: boolea
   return (
     <label
       className={cn(
-        "inline-flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-full border px-3 text-sm transition-[background-color,border-color,color,transform] duration-150 ease-out has-focus-visible:ring-3 has-focus-visible:ring-ring/50 active:scale-[0.97]",
+        "inline-flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-full border px-3 text-sm transition-[background-color,border-color,color,transform] duration-75 ease-out has-focus-visible:ring-3 has-focus-visible:ring-ring/50 active:scale-[0.97]",
         checked ? "border-primary bg-primary text-primary-foreground" : "border-[#e5e5e5] bg-background text-graphite hover:border-ash hover:bg-secondary",
         disabled && "cursor-not-allowed opacity-50 active:scale-100",
       )}
@@ -83,11 +89,68 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
+const DRAWER_DEFAULT = 600;
+const DRAWER_MIN = 420;
+const DRAWER_WIDE = 880;
+const DRAWER_CLOSE_BELOW = 340;
+
+const clampWidth = (width: number) => Math.round(Math.min(Math.max(width, DRAWER_MIN), Math.min(1100, window.innerWidth * 0.92)));
+
 export function TaskDrawer({ task, tasks, team, onClose }: { task: Task | null; tasks: Task[]; team: TeamMember[]; onClose: () => void }) {
+  const [width, setWidth] = usePersisted<number>("relay.drawer-width", DRAWER_DEFAULT);
+  const [live, setLive] = useState<number | null>(null); // width while dragging, so we save once on release
+  const shown = live ?? width;
+
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setLive(width);
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (live === null) return;
+    setLive(clampWidth(window.innerWidth - event.clientX));
+  }
+
+  function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    if (live === null) return;
+    const raw = window.innerWidth - event.clientX;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setLive(null);
+    if (raw < DRAWER_CLOSE_BELOW) return onClose(); // dragged it away
+    setWidth(clampWidth(raw));
+  }
+
   return (
     <Sheet open={Boolean(task)} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[560px]" data-testid="task-drawer">
-        {task ? <DrawerBody key={task.id} task={task} tasks={tasks} team={team} onClose={onClose} /> : null}
+      <SheetContent
+        style={{ width: shown, maxWidth: "100vw" }}
+        className={cn("gap-0 overflow-hidden p-0 data-[side=right]:sm:max-w-none", live !== null && "select-none")}
+        data-testid="task-drawer"
+      >
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panel"
+          aria-valuenow={shown}
+          aria-valuemin={DRAWER_MIN}
+          tabIndex={0}
+          title="Drag to resize · double-click to widen"
+          data-testid="drawer-resize"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onDoubleClick={() => setWidth(width >= DRAWER_WIDE - 40 ? DRAWER_DEFAULT : clampWidth(DRAWER_WIDE))}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") setWidth(clampWidth(width + 32));
+            if (event.key === "ArrowRight") setWidth(clampWidth(width - 32));
+          }}
+          className="group/resize absolute inset-y-0 left-0 z-30 flex w-3 cursor-col-resize touch-none items-stretch justify-center outline-none"
+        >
+          <span className={cn("w-[3px] rounded-full bg-transparent transition-colors duration-75 group-hover/resize:bg-ring group-focus-visible/resize:bg-ring", live !== null && "bg-ring")} />
+        </div>
+        <div className="h-full overflow-y-auto">
+          {task ? <DrawerBody key={task.id} task={task} tasks={tasks} team={team} onClose={onClose} /> : null}
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -208,32 +271,15 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="task-status">Status</Label>
-              <NativeSelect id="task-status" value={form.status} disabled={scope === "none"} onChange={(event) => setForm({ ...form, status: event.target.value as TaskStatus })}>
-                {STATUSES.map((value) => (
-                  <option key={value} value={value}>
-                    {STATUS_LABELS[value]}
-                  </option>
-                ))}
-              </NativeSelect>
+              <OptionSelect id="task-status" value={form.status} disabled={scope === "none"} onValueChange={(status) => setForm({ ...form, status })} options={STATUS_OPTIONS} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-priority">Priority</Label>
-              <NativeSelect id="task-priority" value={form.priority} disabled={!canEditAll} onChange={(event) => setForm({ ...form, priority: event.target.value as TaskPriority })}>
-                {PRIORITIES.map((value) => (
-                  <option key={value} value={value}>
-                    {PRIORITY_LABELS[value]}
-                  </option>
-                ))}
-              </NativeSelect>
+              <OptionSelect id="task-priority" value={form.priority} disabled={!canEditAll} onValueChange={(priority) => setForm({ ...form, priority })} options={PRIORITY_OPTIONS} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-module">Module</Label>
-              <Input id="task-module" list="task-modules" value={form.module} disabled={!canEditAll} onChange={(event) => setForm({ ...form, module: event.target.value })} />
-              <datalist id="task-modules">
-                {modules.map((value) => (
-                  <option key={value} value={value} />
-                ))}
-              </datalist>
+              <SuggestInput id="task-module" value={form.module} disabled={!canEditAll} onValueChange={(module) => setForm({ ...form, module })} suggestions={modules} placeholder="e.g. Billing" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-tags">Tags</Label>
@@ -277,14 +323,13 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
         <Section title="Links">
           <div className="space-y-1.5">
             <Label htmlFor="task-parent">Parent task</Label>
-            <NativeSelect id="task-parent" value={form.parent_task_id} disabled={!canEditAll || hasChildren} onChange={(event) => setForm({ ...form, parent_task_id: event.target.value })}>
-              <option value="">None</option>
-              {parentOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  #{item.task_number} {item.title}
-                </option>
-              ))}
-            </NativeSelect>
+            <OptionSelect
+              id="task-parent"
+              value={form.parent_task_id || NO_PARENT}
+              disabled={!canEditAll || hasChildren}
+              onValueChange={(next) => setForm({ ...form, parent_task_id: next === NO_PARENT ? "" : next })}
+              options={[{ value: NO_PARENT, label: "None" }, ...parentOptions.map((item) => ({ value: item.id, label: `#${item.task_number} ${item.title}` }))]}
+            />
             {hasChildren ? <p className="text-xs text-muted-foreground">This task has sub-tasks, so it cannot become a sub-task itself.</p> : null}
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -308,7 +353,7 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
       </div>
 
       <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border bg-popover px-6 py-4">
-        <span className={cn("flex items-center gap-2 text-xs text-muted-foreground transition-opacity duration-200", dirty ? "opacity-100" : "opacity-0")} aria-live="polite">
+        <span className={cn("flex items-center gap-2 text-xs text-muted-foreground transition-opacity duration-100", dirty ? "opacity-100" : "opacity-0")} aria-live="polite">
           <span className="size-1.5 rounded-full bg-ember" aria-hidden /> Unsaved changes
           <kbd className="rounded-[4px] bg-secondary px-1.5 font-mono text-[10px]">⌘S</kbd>
         </span>

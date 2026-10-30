@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionSelect } from "@/components/ui/option-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { assignableRoles, canManageRole, ROLE_LABELS, type UserRole } from "@/lib/auth/roles";
 import { formatRelative, initials } from "@/lib/format";
@@ -244,13 +244,13 @@ function UserDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="user-role">Role</Label>
-            <NativeSelect id="user-role" value={values.role} disabled={isSelf} onChange={(event) => setValues({ ...values, role: event.target.value as UserRole })}>
-              {(isSelf && user ? [user.role] : roles).map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </NativeSelect>
+            <OptionSelect
+              id="user-role"
+              value={values.role}
+              disabled={isSelf}
+              onValueChange={(role) => setValues({ ...values, role })}
+              options={(isSelf && user ? [user.role] : roles).map((role) => ({ value: role, label: ROLE_LABELS[role] }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="user-slack">Slack member ID (optional)</Label>

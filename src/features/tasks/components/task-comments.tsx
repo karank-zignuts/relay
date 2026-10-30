@@ -3,6 +3,7 @@
 import { ArrowUp, MessageSquareText, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/session-provider";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/roles";
 import { formatDateTime, formatRelative, initials } from "@/lib/format";
@@ -25,7 +26,8 @@ export function TaskComments({ taskId }: { taskId: string }) {
 
   function send() {
     if (!body.trim() || !can(user.role, "comments.create")) return;
-    add.mutate({ authorId: user.id, body }, { onSuccess: () => setBody("") });
+    add.mutate({ authorId: user.id, body, author: { id: user.id, full_name: user.fullName, email: user.email } });
+    setBody(""); // clear at once; the comment is already showing
   }
 
   return (
@@ -36,7 +38,19 @@ export function TaskComments({ taskId }: { taskId: string }) {
       </div>
 
       <div ref={listRef} className="max-h-80 space-y-4 overflow-y-auto" data-testid="comments">
-        {isLoading ? <p className="text-xs text-muted-foreground">Loading comments…</p> : null}
+        {isLoading ? (
+          <div className="space-y-4" aria-busy="true" aria-label="Loading comments">
+            {[0, 1].map((row) => (
+              <div key={row} className="flex gap-3">
+                <Skeleton className="size-7 shrink-0 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {isError ? (
           <p role="alert" className="text-xs text-destructive">
             Could not load comments.
@@ -52,7 +66,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
           const name = comment.author?.full_name || comment.author?.email || "Former member";
           const mine = comment.author_id === user.id;
           return (
-            <div key={comment.id} className="group/comment flex gap-3 animate-pop" data-testid="comment">
+            <div key={comment.id} className={cn("group/comment flex gap-3 animate-pop", comment.id.startsWith("pending-") && "opacity-60")} data-testid="comment">
               <span className={cn("mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-medium", mine ? "bg-primary text-primary-foreground" : "bg-stone text-graphite")}>{initials(name)}</span>
               <div className="min-w-0 flex-1">
                 <p className="flex items-baseline gap-2 text-xs text-muted-foreground">
@@ -93,7 +107,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
           onClick={send}
           disabled={add.isPending || !body.trim()}
           aria-label="Send comment"
-          className="absolute right-2.5 bottom-2.5 grid size-8 place-items-center rounded-full bg-primary text-primary-foreground transition-[background-color,opacity,transform] duration-150 hover:bg-graphite active:scale-95 disabled:opacity-30"
+          className="absolute right-2.5 bottom-2.5 grid size-8 place-items-center rounded-full bg-primary text-primary-foreground transition-[background-color,opacity,transform] duration-75 hover:bg-graphite active:scale-95 disabled:opacity-30"
         >
           <ArrowUp className="size-4" />
         </button>

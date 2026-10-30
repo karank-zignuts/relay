@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionSelect } from "@/components/ui/option-select";
 import { Textarea } from "@/components/ui/textarea";
-import { PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES, type TaskPriority, type TaskStatus } from "../constants";
+import type { TaskPriority, TaskStatus } from "../constants";
 import { useCreateTask } from "../queries";
+import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "./task-options";
 
 export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const user = useSession();
@@ -22,17 +23,12 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    create.mutate(
-      { userId: user.id, input: { title: title.trim(), description, module: module.trim() || null, status, priority } },
-      {
-        onSuccess: () => {
-          setTitle("");
-          setDescription("");
-          setModule("");
-          onOpenChange(false);
-        },
-      },
-    );
+    create.mutate({ userId: user.id, input: { title: title.trim(), description, module: module.trim() || null, status, priority } });
+    // Close at once: the task is already in the list and the server call follows.
+    setTitle("");
+    setDescription("");
+    setModule("");
+    onOpenChange(false);
   }
 
   return (
@@ -58,30 +54,18 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="new-status">Status</Label>
-              <NativeSelect id="new-status" value={status} onChange={(event) => setStatus(event.target.value as TaskStatus)}>
-                {STATUSES.map((value) => (
-                  <option key={value} value={value}>
-                    {STATUS_LABELS[value]}
-                  </option>
-                ))}
-              </NativeSelect>
+              <OptionSelect id="new-status" value={status} onValueChange={setStatus} options={STATUS_OPTIONS} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="new-priority">Priority</Label>
-              <NativeSelect id="new-priority" value={priority} onChange={(event) => setPriority(event.target.value as TaskPriority)}>
-                {PRIORITIES.map((value) => (
-                  <option key={value} value={value}>
-                    {PRIORITY_LABELS[value]}
-                  </option>
-                ))}
-              </NativeSelect>
+              <OptionSelect id="new-priority" value={priority} onValueChange={setPriority} options={PRIORITY_OPTIONS} />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending || !title.trim()}>
+            <Button type="submit" disabled={!title.trim()}>
               Create task
             </Button>
           </DialogFooter>

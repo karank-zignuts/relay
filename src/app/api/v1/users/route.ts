@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     .from("profiles")
     .select("id, full_name, email, role, slack_user_id")
     .eq("is_active", true)
+    .eq("is_test", false)
     .is("deleted_at", null)
     .order("full_name");
   if (error) return internalError("api-list-users", error);

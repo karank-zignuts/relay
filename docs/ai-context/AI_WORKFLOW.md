@@ -123,7 +123,7 @@ A Claude skill file (Phase 3) will hold these steps so the sync is identical eac
 Do **not** drive the browser click-by-click with screenshots. Use the Playwright suite in `e2e/`:
 
 1. Write or extend a spec in `e2e/` (copy `smoke.spec.ts`; import `test` from `./fixtures` so page errors and 5xx responses fail the test).
-2. Run one spec, headless: `npx playwright test e2e/<file>.spec.ts`. Logins are saved once per role by `auth.setup.ts`. The dev server is reused if it is already running. If port 3000 is busy, set `E2E_BASE_URL=http://localhost:3001` and start Relay with `PORT=3001 npm run dev`.
+2. Start the dev server for tests with the test accounts visible: `NEXT_PUBLIC_SHOW_TEST_USERS=1 PORT=3001 npm run dev` (Playwright does this itself when it starts the server). Without that flag the UI hides `profiles.is_test` accounts, so the user and assignee specs cannot find them. Then run one spec, headless: `npx playwright test e2e/<file>.spec.ts`. Logins are saved once per role by `auth.setup.ts`. The dev server is reused if it is already running. If port 3000 is busy, set `E2E_BASE_URL=http://localhost:3001` and start Relay with `PORT=3001 npm run dev`.
 3. Assert on roles and text, never pixels. Only failures print detail. Read `test-results/` for the failure screenshot and trace.
 4. Visual check, once: `E2E_SHOTS=1 npx playwright test e2e/shots.spec.ts` writes screenshots to `test-results/shots/`. View one or two, not every step.
 5. For ad-hoc exploration use the `agent-browser` skill, in a subagent, and report failures only.

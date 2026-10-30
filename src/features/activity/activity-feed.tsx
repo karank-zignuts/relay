@@ -5,7 +5,7 @@ import { History } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { OptionSelect } from "@/components/ui/option-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/empty-state";
@@ -14,8 +14,9 @@ import { useNow } from "@/lib/use-now";
 
 const PAGE = 50;
 
+const ALL = "all";
 const GROUPS = [
-  { value: "", label: "All activity" },
+  { value: ALL, label: "All activity" },
   { value: "task.", label: "Tasks" },
   { value: "comment.", label: "Comments" },
   { value: "user.", label: "User management" },
@@ -25,7 +26,7 @@ const GROUPS = [
 ];
 
 export function ActivityFeed() {
-  const [group, setGroup] = useState("");
+  const [group, setGroup] = useState(ALL);
   const [search, setSearch] = useState("");
 
   const query = useInfiniteQuery({
@@ -33,7 +34,7 @@ export function ActivityFeed() {
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       let request = createClient().from("activity_log").select("*").order("created_at", { ascending: false }).limit(PAGE);
-      if (group) request = request.like("action", `${group}%`);
+      if (group !== ALL) request = request.like("action", `${group}%`);
       if (pageParam) request = request.lt("created_at", pageParam);
       const { data, error } = await request;
       if (error) throw new Error(error.message);
@@ -62,22 +63,17 @@ export function ActivityFeed() {
   }, [entries, now]);
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 animate-page-in sm:px-8">
-      <div>
-        <h1 className="text-[32px] leading-[1.13] font-light tracking-[-0.02em]">Activity</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Everything that happened in Relay, newest first.</p>
+    <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-3 px-4 pt-4 pb-3 animate-page-in sm:px-6">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="text-2xl font-light leading-none tracking-[-0.02em]">Activity</h1>
+        <p className="text-sm text-muted-foreground">Everything that happened in Relay, newest first.</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <NativeSelect aria-label="Activity type" className="w-48" value={group} onChange={(event) => setGroup(event.target.value)}>
-          {GROUPS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </NativeSelect>
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <OptionSelect aria-label="Activity type" className="w-52" value={group} onValueChange={setGroup} options={GROUPS} />
         <Input aria-label="Search activity" placeholder="Search who or what…" className="w-64" value={search} onChange={(event) => setSearch(event.target.value)} />
       </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="activity-scroll">
       {query.isLoading ? (
         <div className="space-y-px overflow-hidden rounded-[20px] border border-border" aria-busy="true">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -116,12 +112,13 @@ export function ActivityFeed() {
       )}
 
       {query.hasNextPage ? (
-        <div className="text-center">
+        <div className="py-4 text-center">
           <Button variant="outline" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
             {query.isFetchingNextPage ? "Loading…" : "Load more"}
           </Button>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

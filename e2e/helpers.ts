@@ -1,6 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { APIRequestContext } from "@playwright/test";
+import type { APIRequestContext, Locator, Page } from "@playwright/test";
 import { ROLES, type Role } from "./roles";
+
+/** Pick an option in a themed OptionSelect: open it by its label, then click the option. */
+export async function choose(scope: Page | Locator, label: string, option: string) {
+  const page = "page" in scope ? scope.page() : scope;
+  await scope.getByLabel(label, { exact: true }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
 
 export const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
