@@ -507,6 +507,7 @@ export type Database = {
           environments: Database["public"]["Enums"]["task_env"][]
           human_edited_fields: string[]
           id: string
+          is_test: boolean
           jira_key: string | null
           jira_status: string | null
           jira_url: string | null
@@ -537,6 +538,7 @@ export type Database = {
           environments?: Database["public"]["Enums"]["task_env"][]
           human_edited_fields?: string[]
           id?: string
+          is_test?: boolean
           jira_key?: string | null
           jira_status?: string | null
           jira_url?: string | null
@@ -567,6 +569,7 @@ export type Database = {
           environments?: Database["public"]["Enums"]["task_env"][]
           human_edited_fields?: string[]
           id?: string
+          is_test?: boolean
           jira_key?: string | null
           jira_status?: string | null
           jira_url?: string | null
@@ -678,7 +681,12 @@ export type Database = {
         Args: { p_actor: string; p_api_key_id: string; p_items: Json }
         Returns: Json
       }
+      task_or_user_is_test: {
+        Args: { p_task_id: string; p_user_id: string }
+        Returns: boolean
+      }
       task_row_json: { Args: { p_id: string }; Returns: Json }
+      viewer_is_test: { Args: never; Returns: boolean }
     }
     Enums: {
       attachment_source: "client" | "team"

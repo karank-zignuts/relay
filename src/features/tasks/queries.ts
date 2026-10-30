@@ -211,6 +211,7 @@ function pendingTask(input: api.NewTask, userId: string): Task {
     human_edited_fields: [],
     raw_slack: null,
     board_rank: -Date.now() / 1000,
+    is_test: false, // the database flags test tasks itself; a person's own optimistic task never is
     created_by: userId,
     created_at: now,
     updated_at: now,
