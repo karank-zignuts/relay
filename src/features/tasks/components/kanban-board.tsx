@@ -295,9 +295,10 @@ function BoardColumn({
                 <span className="font-mono text-xs text-muted-foreground">{task.task_number > 0 ? `#${task.task_number}` : "…"}</span>
                 <span className="mt-0.5 block pr-5 font-medium leading-snug">{task.title}</span>
               </div>
-              <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+              {/* The chips pull 6px past their text for a roomy hover area, so the gap must be wider than 12px and nothing here may clip (no overflow-hidden on the module wrapper). */}
+              <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                 <PriorityCell task={task} compact />
-                <span className="min-w-0 truncate">
+                <span className="min-w-0">
                   <ModuleCell task={task} />
                 </span>
                 {commentCount(task) > 0 ? (

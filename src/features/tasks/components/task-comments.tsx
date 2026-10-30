@@ -168,7 +168,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
         <p className="mt-0.5 text-xs text-muted-foreground">Only your team sees these. Nothing is sent to Slack.</p>
       </div>
 
-      <div ref={listRef} className="max-h-80 space-y-4 overflow-y-auto" data-testid="comments">
+      <div ref={listRef} className="-mx-1 -mt-1 mb-2 max-h-80 space-y-4 overflow-y-auto px-1 py-1" data-testid="comments">
         {isPending ? (
           <div className="space-y-4" aria-busy="true" aria-label="Loading comments">
             {[0, 1].map((row) => (

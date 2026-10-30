@@ -29,7 +29,7 @@ export function RelayLogo({ className, title = "Relay" }: { className?: string; 
   );
 }
 
-/** The mark assembling itself: dot, stack, combine, final. Loops. Shows the finished mark when the user prefers reduced motion. */
+/** The mark assembling itself: dot, stack, combine, final. Loops, about 3s. Shows the finished mark when the user prefers reduced motion. */
 export function RelayLoader({ className, label = "Loading" }: { className?: string; label?: string }) {
   return (
     <svg viewBox="-6 -6 100 100" role="img" aria-label={label} className={cn("size-16", className)}>

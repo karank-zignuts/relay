@@ -1,7 +1,7 @@
 "use client";
 
 import { Placeholder } from "@tiptap/extensions";
-import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Code, Italic, Link2, List, ListOrdered, Strikethrough } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -29,7 +29,7 @@ function ToolButton({ label, shortcut, active, onClick, children }: { label: str
         // Keep the caret in the editor: a button press must not steal focus.
         onMouseDown={(event) => event.preventDefault()}
         onClick={onClick}
-        className={cn("grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-stone hover:text-foreground", active && "bg-stone text-foreground")}
+        className={cn("grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-stone hover:text-foreground", active && "bg-primary text-primary-foreground hover:bg-graphite hover:text-primary-foreground")}
       >
         {children}
       </button>
@@ -37,7 +37,7 @@ function ToolButton({ label, shortcut, active, onClick, children }: { label: str
   );
 }
 
-function LinkButton({ editor }: { editor: Editor }) {
+function LinkButton({ editor, active }: { editor: Editor; active: boolean }) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   return (
@@ -54,9 +54,9 @@ function LinkButton({ editor }: { editor: Editor }) {
             <button
               type="button"
               aria-label="Link"
-              aria-pressed={editor.isActive("link")}
+              aria-pressed={active}
               onMouseDown={(event) => event.preventDefault()}
-              className={cn("grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-stone hover:text-foreground", editor.isActive("link") && "bg-stone text-foreground")}
+              className={cn("grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-stone hover:text-foreground", active && "bg-primary text-primary-foreground hover:bg-graphite hover:text-primary-foreground")}
             />
           }
         >
@@ -151,6 +151,20 @@ export function RichEditor({
     onCreate: ({ editor: current }) => onEditor?.(current),
   });
 
+  // Tiptap does not re-render on cursor or format changes, so the toolbar subscribes to what it shows.
+  const active = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      bold: current?.isActive("bold") ?? false,
+      italic: current?.isActive("italic") ?? false,
+      strike: current?.isActive("strike") ?? false,
+      code: current?.isActive("code") ?? false,
+      bulletList: current?.isActive("bulletList") ?? false,
+      orderedList: current?.isActive("orderedList") ?? false,
+      link: current?.isActive("link") ?? false,
+    }),
+  });
+
   return (
     <div className={cn("rounded-[20px] bg-secondary transition-shadow duration-100 focus-within:ring-3 focus-within:ring-ring/20", className)}>
       <div className="max-h-52 overflow-y-auto">
@@ -159,26 +173,26 @@ export function RichEditor({
       <div className="flex items-center gap-0.5 px-2.5 pt-1 pb-2.5">
         {editor ? (
           <>
-            <ToolButton label="Bold" shortcut="⌘B" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <ToolButton label="Bold" shortcut="⌘B" active={active?.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
               <Bold className="size-3.5" />
             </ToolButton>
-            <ToolButton label="Italic" shortcut="⌘I" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <ToolButton label="Italic" shortcut="⌘I" active={active?.italic} onClick={() => editor.chain().focus().toggleItalic().run()}>
               <Italic className="size-3.5" />
             </ToolButton>
-            <ToolButton label="Strikethrough" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}>
+            <ToolButton label="Strikethrough" active={active?.strike} onClick={() => editor.chain().focus().toggleStrike().run()}>
               <Strikethrough className="size-3.5" />
             </ToolButton>
-            <ToolButton label="Code" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()}>
+            <ToolButton label="Code" active={active?.code} onClick={() => editor.chain().focus().toggleCode().run()}>
               <Code className="size-3.5" />
             </ToolButton>
             <span className="mx-1 h-4 w-px bg-stone" aria-hidden />
-            <ToolButton label="Bulleted list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+            <ToolButton label="Bulleted list" active={active?.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}>
               <List className="size-3.5" />
             </ToolButton>
-            <ToolButton label="Numbered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+            <ToolButton label="Numbered list" active={active?.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
               <ListOrdered className="size-3.5" />
             </ToolButton>
-            <LinkButton editor={editor} />
+            <LinkButton editor={editor} active={active?.link ?? false} />
           </>
         ) : null}
         <div className="ml-auto flex items-center gap-1.5">{actions}</div>

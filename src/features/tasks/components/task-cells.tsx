@@ -129,7 +129,7 @@ export function ModuleCell({ task }: { task: Task }) {
   const user = useSession();
   const update = useUpdateTask();
   const { data: modules = [] } = useModules();
-  const label = task.module ? <span className="text-graphite">{task.module}</span> : <span className="text-muted-foreground">—</span>;
+  const label = task.module ? <span className="min-w-0 truncate text-graphite">{task.module}</span> : <span className="text-muted-foreground">—</span>;
   if (taskEditScope(user.role, user.id, assigneeIds(task)) !== "all") return label;
   return (
     <Stop>
@@ -142,9 +142,9 @@ export function ModuleCell({ task }: { task: Task }) {
         searchPlaceholder="Find or add a module…"
         aria-label={`Change module of task ${task.task_number}`}
         trigger={
-          <button type="button" aria-label={`Change module of task ${task.task_number}`} className={cn(editable, "inline-flex items-center gap-1")}>
+          <button type="button" aria-label={`Change module of task ${task.task_number}`} className={cn(editable, "inline-flex max-w-[calc(100%+0.75rem)] items-center gap-1")}>
             <Tip label={task.module ? "Change module" : "Add a module"}>
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex min-w-0 items-center gap-1">
                 {label}
                 {task.module ? null : <Plus className="size-3 text-muted-foreground" aria-hidden />}
               </span>

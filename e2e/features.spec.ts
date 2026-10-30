@@ -117,6 +117,21 @@ test("a comment can be edited and shows who has seen it", async ({ page, browser
   await comment.hover();
   await comment.getByRole("button", { name: "Edit comment" }).click();
   await comment.getByLabel("Edit comment", { exact: true }).fill("Final wording");
+  // The scrolling list must leave room for the editor's focus ring, or its right and bottom edges are cut off.
+  const room = await comment.getByLabel("Edit comment", { exact: true }).evaluate((el) => {
+    const field = el.closest('[class*="rounded-[20px]"]')!.getBoundingClientRect();
+    const list = el.closest('[data-testid="comments"]')!.getBoundingClientRect();
+    return { right: list.right - field.right, bottom: list.bottom - field.bottom };
+  });
+  expect(room.right).toBeGreaterThanOrEqual(3);
+  expect(room.bottom).toBeGreaterThanOrEqual(3);
+  // ...without squeezing the gap between the list and the "Write a comment" box (12px visible, the list adds 4px of its own padding).
+  const gap = await drawer.getByLabel("Write a comment").evaluate((el) => {
+    const field = el.closest('[class*="rounded-[20px]"]')!.getBoundingClientRect();
+    const list = document.querySelector('[data-testid="comments"]')!.getBoundingClientRect();
+    return field.top - list.bottom;
+  });
+  expect(gap).toBeGreaterThanOrEqual(8);
   await comment.getByRole("button", { name: "Save" }).click();
   await expect(comment).toContainText("Final wording");
   await expect(comment).toContainText("edited");

@@ -55,7 +55,7 @@ export function AppNav({ attentionCount }: { attentionCount: number }) {
         </nav>
         <Tip label={live === "live" ? "Live: changes from your team appear instantly" : live === "offline" ? "Offline: reconnecting…" : "Connecting…"} side="bottom">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="live-status" data-status={live}>
-            <span className={cn("size-1.5 rounded-full transition-colors duration-300", live === "live" ? "bg-foreground" : live === "offline" ? "bg-ember" : "animate-pulse bg-ash")} aria-hidden />
+            <span className={cn("size-1.5 rounded-full transition-colors duration-300", live === "live" ? "bg-ember" : live === "offline" ? "border border-ash bg-transparent" : "animate-pulse bg-ash")} aria-hidden />
             <span className="hidden sm:inline">{live === "live" ? "Live" : live === "offline" ? "Offline" : "Connecting"}</span>
           </span>
         </Tip>

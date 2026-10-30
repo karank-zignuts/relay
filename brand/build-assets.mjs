@@ -129,9 +129,9 @@ write("brand/favicon/favicon.ico", ico);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 512, height: 512 } });
 await page.setContent(`<style>html,body{margin:0;background:transparent}svg{width:512px;height:512px;display:block}</style>${loaderSvg}`);
-const frames = [["01-start", 0.14], ["02-build", 0.4], ["03-form", 0.68], ["04-final", 0.84]];
+const frames = [["01-start", 0.1], ["02-build", 0.31], ["03-form", 0.55], ["04-final", 0.8]];
 for (const [name, t] of frames) {
-  await page.evaluate((ms) => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = ms; }), t * 3200);
+  await page.evaluate((ms) => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = ms; }), t * 3000);
   await page.screenshot({ path: path.join(brand, `animation/frames/${name}.png`), omitBackground: true });
 }
 await browser.close();
