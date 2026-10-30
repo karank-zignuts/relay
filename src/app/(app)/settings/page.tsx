@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { can } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
+import { SHOW_TEST_USERS } from "@/features/users/test-users";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiKeysPanel } from "./api-keys-panel";
 import { SettingsForm } from "./settings-form";
@@ -10,9 +11,12 @@ export default async function SettingsPage() {
   if (!can(user.role, "settings.manage")) redirect("/tasks");
 
   const admin = createAdminClient();
+  let keysQuery = admin.from("api_keys").select("id, name, key_prefix, last_used_at, revoked_at, created_at").is("deleted_at", null).order("created_at", { ascending: false });
+  // Keys made by the automated tests are noise for people. NEXT_PUBLIC_SHOW_TEST_USERS=1 brings them back.
+  if (!SHOW_TEST_USERS) keysQuery = keysQuery.not("name", "like", "e2e-%");
   const [{ data: settings }, { data: keys }] = await Promise.all([
     admin.from("app_settings").select("*").eq("id", true).single(),
-    admin.from("api_keys").select("id, name, key_prefix, last_used_at, revoked_at, created_at").is("deleted_at", null).order("created_at", { ascending: false }),
+    keysQuery,
   ]);
   if (!settings) throw new Error("Settings row is missing");
 

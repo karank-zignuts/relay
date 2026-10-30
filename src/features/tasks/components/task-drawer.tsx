@@ -1,14 +1,16 @@
 "use client";
 
 import { Check, ExternalLink } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OptionSelect } from "@/components/ui/option-select";
-import { SuggestInput } from "@/components/ui/suggest-input";
+import { ComboSelect } from "@/components/ui/combo-select";
+import { Tip } from "@/components/ui/tip";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { isAwaitingReply } from "@/lib/attention";
@@ -16,11 +18,12 @@ import { taskEditScope } from "@/lib/auth/task-permissions";
 import { formatDateTime, initials } from "@/lib/format";
 import { usePersisted } from "@/lib/use-persisted";
 import { cn } from "@/lib/utils";
-import { AREA_LABELS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, type TaskChangeArea, type TaskEnv, type TaskPriority, type TaskStatus } from "../constants";
-import { useDismissReply, useSetAssignees, useUpdateTask } from "../queries";
+import { AREA_LABELS, BASE_TAGS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, type TaskChangeArea, type TaskEnv, type TaskPriority, type TaskStatus } from "../constants";
+import { taskKeys, useDismissReply, useModules, useSetAssignees, useTags, useTaskLite, useUpdateTask } from "../queries";
 import { assigneeIds, type Task, type TeamMember } from "../types";
 import { StatusChip } from "./task-chips";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "./task-options";
+import { TaskAttachments } from "./task-attachments";
 import { TaskComments } from "./task-comments";
 
 // OptionSelect needs a real value for "no parent", so the form keeps "" and the select uses this.
@@ -32,7 +35,7 @@ type FormState = {
   module: string;
   status: TaskStatus;
   priority: TaskPriority;
-  tags: string;
+  tags: string[];
   environments: TaskEnv[];
   changes_in: TaskChangeArea[];
   jira_key: string;
@@ -48,7 +51,7 @@ const toForm = (task: Task): FormState => ({
   module: task.module ?? "",
   status: task.status,
   priority: task.priority,
-  tags: task.tags.join(", "),
+  tags: task.tags,
   environments: task.environments,
   changes_in: task.changes_in,
   jira_key: task.jira_key ?? "",
@@ -59,14 +62,13 @@ const toForm = (task: Task): FormState => ({
 });
 
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((item) => b.includes(item));
-const parseTags = (value: string) => [...new Set(value.split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
 
 function TogglePill({ checked, onChange, disabled, children }: { checked: boolean; onChange: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <label
       className={cn(
         "inline-flex h-8 cursor-pointer select-none items-center gap-1.5 rounded-full border px-3 text-sm transition-[background-color,border-color,color,transform] duration-75 ease-out has-focus-visible:ring-3 has-focus-visible:ring-ring/50 active:scale-[0.97]",
-        checked ? "border-primary bg-primary text-primary-foreground" : "border-[#e5e5e5] bg-background text-graphite hover:border-ash hover:bg-secondary",
+        checked ? "border-primary bg-primary text-primary-foreground" : "border-stone bg-background text-graphite hover:border-ash hover:bg-secondary",
         disabled && "cursor-not-allowed opacity-50 active:scale-100",
       )}
     >
@@ -92,71 +94,88 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 const DRAWER_DEFAULT = 600;
 const DRAWER_MIN = 420;
 const DRAWER_WIDE = 880;
-const DRAWER_CLOSE_BELOW = 340;
+/** Dragging the edge further right than this closes the panel on the spot, without waiting for release. */
+const DRAWER_CLOSE_BELOW = 360;
 
-const clampWidth = (width: number) => Math.round(Math.min(Math.max(width, DRAWER_MIN), Math.min(1100, window.innerWidth * 0.92)));
+const maxWidth = () => Math.round(Math.min(1100, window.innerWidth * 0.92));
+const clampWidth = (width: number) => Math.round(Math.min(Math.max(width, DRAWER_MIN), maxWidth()));
 
-export function TaskDrawer({ task, tasks, team, onClose }: { task: Task | null; tasks: Task[]; team: TeamMember[]; onClose: () => void }) {
+export function TaskDrawer({ task, team, onClose }: { task: Task | null; team: TeamMember[]; onClose: () => void }) {
   const [width, setWidth] = usePersisted<number>("relay.drawer-width", DRAWER_DEFAULT);
   const [live, setLive] = useState<number | null>(null); // width while dragging, so we save once on release
-  const shown = live ?? width;
+  // While the panel slides away after a drag-close it keeps the width it had, so it does not jump back to full size.
+  const [frozen, setFrozen] = useState<number | null>(null);
+  const dragging = useRef(false);
+  const shown = frozen ?? live ?? width;
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
+    dragging.current = true;
     setLive(width);
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (live === null) return;
-    setLive(clampWidth(window.innerWidth - event.clientX));
+    if (!dragging.current) return;
+    const raw = window.innerWidth - event.clientX;
+    if (raw < DRAWER_CLOSE_BELOW) {
+      // Past the edge: close now, mid-drag.
+      dragging.current = false;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      setFrozen(Math.max(raw, DRAWER_MIN));
+      setLive(null);
+      onClose();
+      return;
+    }
+    // Follow the pointer freely down to the close line; the minimum width is only applied when saving.
+    setLive(Math.min(raw, maxWidth()));
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    if (live === null) return;
-    const raw = window.innerWidth - event.clientX;
+    if (!dragging.current) return;
+    dragging.current = false;
     event.currentTarget.releasePointerCapture(event.pointerId);
+    const final = live === null ? width : clampWidth(live);
     setLive(null);
-    if (raw < DRAWER_CLOSE_BELOW) return onClose(); // dragged it away
-    setWidth(clampWidth(raw));
+    setWidth(final);
   }
 
   return (
-    <Sheet open={Boolean(task)} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={Boolean(task)} onOpenChange={(open) => !open && onClose()} onOpenChangeComplete={(open) => !open && setFrozen(null)}>
       <SheetContent
         style={{ width: shown, maxWidth: "100vw" }}
-        className={cn("gap-0 overflow-hidden p-0 data-[side=right]:sm:max-w-none", live !== null && "select-none")}
+        className={cn("gap-0 p-0 data-[side=right]:sm:max-w-none", live !== null && "select-none transition-none")}
         data-testid="task-drawer"
       >
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize panel"
-          aria-valuenow={shown}
-          aria-valuemin={DRAWER_MIN}
-          tabIndex={0}
-          title="Drag to resize · double-click to widen"
-          data-testid="drawer-resize"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onDoubleClick={() => setWidth(width >= DRAWER_WIDE - 40 ? DRAWER_DEFAULT : clampWidth(DRAWER_WIDE))}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") setWidth(clampWidth(width + 32));
-            if (event.key === "ArrowRight") setWidth(clampWidth(width - 32));
-          }}
-          className="group/resize absolute inset-y-0 left-0 z-30 flex w-3 cursor-col-resize touch-none items-stretch justify-center outline-none"
-        >
-          <span className={cn("w-[3px] rounded-full bg-transparent transition-colors duration-75 group-hover/resize:bg-ring group-focus-visible/resize:bg-ring", live !== null && "bg-ring")} />
-        </div>
-        <div className="h-full overflow-y-auto">
-          {task ? <DrawerBody key={task.id} task={task} tasks={tasks} team={team} onClose={onClose} /> : null}
-        </div>
+        <Tip label="Drag to resize · double-click to widen" side="left">
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize panel"
+            aria-valuenow={shown}
+            aria-valuemin={DRAWER_MIN}
+            tabIndex={0}
+            data-testid="drawer-resize"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onDoubleClick={() => setWidth(width >= DRAWER_WIDE - 40 ? DRAWER_DEFAULT : clampWidth(DRAWER_WIDE))}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft") setWidth(clampWidth(width + 32));
+              if (event.key === "ArrowRight") setWidth(clampWidth(width - 32));
+            }}
+            className="group/resize absolute inset-y-0 -left-2 z-30 flex w-4 touch-none items-stretch justify-center outline-none"
+          >
+            <span className={cn("w-0.5 rounded-full bg-transparent transition-[background-color,width] duration-100 group-hover/resize:w-[3px] group-hover/resize:bg-foreground/70 group-focus-visible/resize:bg-foreground/70", live !== null && "w-[3px] bg-foreground")} />
+          </div>
+        </Tip>
+        <div className="h-full overflow-y-auto overflow-x-hidden">{task ? <DrawerBody key={task.id} task={task} team={team} onClose={onClose} /> : null}</div>
       </SheetContent>
     </Sheet>
   );
 }
 
-function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[]; team: TeamMember[]; onClose: () => void }) {
+function DrawerBody({ task, team, onClose }: { task: Task; team: TeamMember[]; onClose: () => void }) {
   const user = useSession();
   const scope = taskEditScope(user.role, user.id, assigneeIds(task));
   const canEditAll = scope === "all";
@@ -166,9 +185,14 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
   const setAssignees = useSetAssignees();
   const dismiss = useDismissReply();
 
-  const modules = useMemo(() => [...new Set(tasks.map((item) => item.module).filter((value): value is string => Boolean(value)))].sort(), [tasks]);
-  const hasChildren = tasks.some((item) => item.parent_task_id === task.id);
-  const parentOptions = tasks.filter((item) => item.id !== task.id && !item.parent_task_id);
+  const queryClient = useQueryClient();
+  const { data: moduleNames = [] } = useModules();
+  const { data: tagNames = [] } = useTags();
+  const { data: lite = [] } = useTaskLite();
+  const moduleOptions = useMemo(() => [...new Set([...moduleNames, ...(form.module ? [form.module] : [])])].sort((a, b) => a.localeCompare(b)).map((name) => ({ value: name, label: name })), [moduleNames, form.module]);
+  const tagOptions = useMemo(() => [...new Set([...BASE_TAGS, ...tagNames, ...form.tags])].sort().map((name) => ({ value: name, label: name })), [tagNames, form.tags]);
+  const hasChildren = lite.some((item) => item.parent_task_id === task.id);
+  const parentOptions = lite.filter((item) => item.id !== task.id && !item.parent_task_id);
   const initial = useMemo(() => toForm(task), [task]);
 
   const toggle = <K extends "environments" | "changes_in" | "assignees">(key: K, value: FormState[K][number]) =>
@@ -188,7 +212,7 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
       if (form.description !== initial.description) patch.description = form.description;
       if (form.module.trim() !== initial.module) patch.module = form.module.trim() || null;
       if (form.priority !== initial.priority) patch.priority = form.priority;
-      if (form.tags !== initial.tags) patch.tags = parseTags(form.tags);
+      if (!sameSet(form.tags, initial.tags)) patch.tags = form.tags;
       if (!sameSet(form.environments, initial.environments)) patch.environments = form.environments;
       if (!sameSet(form.changes_in, initial.changes_in)) patch.changes_in = form.changes_in;
       if (form.jira_key.trim() !== initial.jira_key) patch.jira_key = form.jira_key.trim() || null;
@@ -279,11 +303,32 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-module">Module</Label>
-              <SuggestInput id="task-module" value={form.module} disabled={!canEditAll} onValueChange={(module) => setForm({ ...form, module })} suggestions={modules} placeholder="e.g. Billing" />
+              <ComboSelect
+                id="task-module"
+                value={form.module}
+                disabled={!canEditAll}
+                onValueChange={(module) => setForm({ ...form, module })}
+                options={moduleOptions}
+                creatable
+                clearLabel="No module"
+                placeholder="Choose a module"
+                searchPlaceholder="Find or add a module…"
+                onCreate={(name) => queryClient.setQueryData<string[]>(taskKeys.modules, (names = []) => (names.includes(name) ? names : [...names, name]))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-tags">Tags</Label>
-              <Input id="task-tags" placeholder="bug, suggestion" value={form.tags} disabled={!canEditAll} onChange={(event) => setForm({ ...form, tags: event.target.value })} />
+              <ComboSelect
+                multiple
+                id="task-tags"
+                values={form.tags}
+                disabled={!canEditAll}
+                onValuesChange={(tags) => setForm({ ...form, tags })}
+                options={tagOptions}
+                creatable
+                placeholder="Add tags"
+                searchPlaceholder="Find or add a tag…"
+              />
             </div>
           </div>
         </Section>
@@ -347,6 +392,9 @@ function DrawerBody({ task, tasks, team, onClose }: { task: Task; tasks: Task[];
             </div>
           </div>
         </Section>
+
+        <hr className="border-border" />
+        <TaskAttachments taskId={task.id} />
 
         <hr className="border-border" />
         <TaskComments taskId={task.id} />

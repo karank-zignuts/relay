@@ -9,7 +9,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-graphite",
         outline:
-          "border-[#e5e5e5] bg-background hover:border-ash hover:bg-secondary hover:text-foreground aria-expanded:bg-secondary aria-expanded:text-foreground",
+          "border-stone bg-background hover:border-ash hover:bg-secondary hover:text-foreground aria-expanded:bg-secondary aria-expanded:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

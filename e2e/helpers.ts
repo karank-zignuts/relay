@@ -49,3 +49,16 @@ export function syncItem(overrides: Record<string, unknown> = {}) {
 }
 
 export const bearer = (key: string) => ({ Authorization: `Bearer ${key}` });
+
+/** Opens a task from its table row. Clicks the title, because other cells (assignees, priority, module) edit in place. */
+export async function openTask(row: Locator) {
+  await row.getByTestId("task-title").click({ timeout: 45_000 });
+}
+
+/** Pick or create a value in a searchable ComboSelect: open it by its label, type, click the first matching option. */
+export async function pickCombo(scope: Page | Locator, label: string, text: string) {
+  const page = "page" in scope ? scope.page() : scope;
+  await scope.getByLabel(label, { exact: true }).click();
+  await page.getByRole("textbox", { name: /Find or add|Search/ }).fill(text);
+  await page.getByRole("option", { name: new RegExp(text) }).first().click();
+}

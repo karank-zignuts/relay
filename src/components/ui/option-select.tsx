@@ -57,7 +57,7 @@ export function OptionSelect<T extends string>({
           "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
           "data-popup-open:border-ring data-popup-open:ring-3 data-popup-open:ring-ring/30",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          variant === "field" ? "h-9 rounded-[4px] border-input px-2.5 hover:border-ash" : "h-8 w-auto rounded-full border-[#e5e5e5] bg-background px-3.5 hover:border-ash hover:bg-secondary",
+          variant === "field" ? "h-9 rounded-[4px] border-input px-2.5 hover:border-ash" : "h-8 w-auto rounded-full border-stone bg-background px-3.5 hover:border-ash hover:bg-secondary",
           className,
         )}
       >
@@ -84,7 +84,7 @@ export function OptionSelect<T extends string>({
                   value={option.value}
                   disabled={option.disabled}
                   className={cn(
-                    "flex cursor-default items-center gap-2 rounded-[8px] py-2 pr-2 pl-2.5 text-sm outline-none select-none",
+                    "flex cursor-pointer items-center gap-2 rounded-[8px] py-2 pr-2 pl-2.5 text-sm outline-none select-none",
                     "data-highlighted:bg-secondary data-selected:font-medium data-disabled:pointer-events-none data-disabled:opacity-50",
                   )}
                 >

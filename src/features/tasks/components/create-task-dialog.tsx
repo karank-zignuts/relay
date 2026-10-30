@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ComboSelect } from "@/components/ui/combo-select";
 import { OptionSelect } from "@/components/ui/option-select";
 import { Textarea } from "@/components/ui/textarea";
 import type { TaskPriority, TaskStatus } from "../constants";
-import { useCreateTask } from "../queries";
+import { useCreateTask, useModules } from "../queries";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "./task-options";
 
 export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const user = useSession();
   const create = useCreateTask();
+  const { data: modules = [] } = useModules();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [module, setModule] = useState("");
@@ -50,7 +52,16 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="new-module">Module</Label>
-              <Input id="new-module" value={module} onChange={(event) => setModule(event.target.value)} />
+              <ComboSelect
+                id="new-module"
+                value={module}
+                onValueChange={setModule}
+                options={modules.map((name) => ({ value: name, label: name }))}
+                creatable
+                clearLabel="No module"
+                placeholder="Choose"
+                searchPlaceholder="Find or add a module…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="new-status">Status</Label>

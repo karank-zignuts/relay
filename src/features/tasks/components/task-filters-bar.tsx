@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,24 @@ import { OptionSelect } from "@/components/ui/option-select";
 import { cn } from "@/lib/utils";
 import { AREA_LABELS, CHANGE_AREAS, ENV_LABELS, ENVIRONMENTS, PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES } from "../constants";
 import { activeFilterCount, EMPTY_FILTERS, UNASSIGNED, type TaskFilters } from "../filters";
-import { assigneeIds, type Task, type TeamMember } from "../types";
+import { useModules, useTags } from "../queries";
+import type { TeamMember } from "../types";
 
 const sameList = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((item) => b.includes(item));
 
 export function TaskFiltersBar({
-  tasks,
   team,
   filters,
   onChange,
   shown,
+  all,
   expanded,
 }: {
-  tasks: Task[];
   team: TeamMember[];
   filters: TaskFilters;
   onChange: (next: TaskFilters) => void;
-  shown: number;
+  shown: number | null;
+  all: number | null;
   expanded: boolean;
 }) {
   const user = useSession();
@@ -36,19 +37,10 @@ export function TaskFiltersBar({
   const moreActive = filters.jira !== "any" || filters.level !== "all" || filters.from !== "" || filters.to !== "";
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const modules = useMemo(() => [...new Set(tasks.map((task) => task.module).filter((value): value is string => Boolean(value)))].sort(), [tasks]);
-  const tags = useMemo(() => [...new Set(tasks.flatMap((task) => task.tags))].sort(), [tasks]);
-  const counts = useMemo(() => {
-    const status = new Map<string, number>();
-    const assignee = new Map<string, number>();
-    for (const task of tasks) {
-      status.set(task.status, (status.get(task.status) ?? 0) + 1);
-      const ids = assigneeIds(task);
-      if (ids.length === 0) assignee.set(UNASSIGNED, (assignee.get(UNASSIGNED) ?? 0) + 1);
-      ids.forEach((id) => assignee.set(id, (assignee.get(id) ?? 0) + 1));
-    }
-    return { status, assignee };
-  }, [tasks]);
+  const { data: moduleNames = [] } = useModules();
+  const { data: tagNames = [] } = useTags();
+  const modules = moduleNames;
+  const tags = tagNames;
 
   // One-tap views. Each toggles a single filter, so they combine with everything else.
   const views = [
@@ -94,7 +86,7 @@ export function TaskFiltersBar({
               onClick={view.toggle}
               className={cn(
                 "h-8 rounded-full border px-3.5 text-sm transition-[background-color,border-color,color,transform] duration-75 ease-out active:scale-[0.97]",
-                view.on ? "border-primary bg-primary text-primary-foreground" : "border-[#e5e5e5] bg-background text-graphite hover:border-ash hover:bg-secondary",
+                view.on ? "border-primary bg-primary text-primary-foreground" : "border-stone bg-background text-graphite hover:border-ash hover:bg-secondary",
               )}
             >
               {view.label}
@@ -102,22 +94,28 @@ export function TaskFiltersBar({
           ))}
         </div>
         <span className="ml-auto text-sm text-muted-foreground tabular-nums" data-testid="task-count">
-          {shown} of {tasks.length} tasks
+          {shown === null || all === null ? "" : `${shown} of ${all} tasks`}
         </span>
       </div>
 
-      {expanded ? (
-        <div className="space-y-3 animate-pop">
+      <div
+        className={cn("grid transition-[grid-template-rows,opacity] duration-200 ease-out-quint", expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}
+        inert={!expanded}
+        aria-hidden={!expanded}
+        data-testid="filters-panel"
+      >
+        <div className="-m-1 min-h-0 overflow-hidden p-1">
+        <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <MultiSelectFilter label="Status" selected={filters.status} onChange={(value) => set("status", value)} options={STATUSES.map((value) => ({ value, label: STATUS_LABELS[value], count: counts.status.get(value) ?? 0 }))} />
+        <MultiSelectFilter label="Status" selected={filters.status} onChange={(value) => set("status", value)} options={STATUSES.map((value) => ({ value, label: STATUS_LABELS[value] }))} />
         <MultiSelectFilter label="Priority" selected={filters.priority} onChange={(value) => set("priority", value)} options={PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] }))} />
         <MultiSelectFilter
           label="Assignee"
           selected={filters.assignee}
           onChange={(value) => set("assignee", value)}
           options={[
-            { value: UNASSIGNED, label: "Unassigned", count: counts.assignee.get(UNASSIGNED) ?? 0 },
-            ...team.filter((member) => member.is_active).map((member) => ({ value: member.id, label: member.full_name || member.email, count: counts.assignee.get(member.id) ?? 0 })),
+            { value: UNASSIGNED, label: "Unassigned" },
+            ...team.filter((member) => member.is_active).map((member) => ({ value: member.id, label: member.full_name || member.email })),
           ]}
         />
         <MultiSelectFilter label="Module" selected={filters.module} onChange={(value) => set("module", value)} options={modules.map((value) => ({ value, label: value }))} />
@@ -165,7 +163,8 @@ export function TaskFiltersBar({
       ) : null}
 
         </div>
-      ) : null}
+        </div>
+      </div>
 
       {chips.length > 0 || active > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">

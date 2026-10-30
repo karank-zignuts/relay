@@ -1,4 +1,6 @@
 import { AppNav } from "@/components/layout/app-nav";
+import { RealtimeSync } from "@/lib/realtime";
+import { TipProvider } from "@/components/ui/tip";
 import { SessionProvider } from "@/components/session-provider";
 import { SyncStatusBar } from "@/features/sync/sync-status-bar";
 import { isAwaitingReply } from "@/lib/attention";
@@ -18,11 +20,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <SessionProvider user={user}>
+      <TipProvider>
+      <RealtimeSync />
       <div className="flex h-dvh flex-col">
         <AppNav attentionCount={attentionCount} />
         <SyncStatusBar />
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
       </div>
+      </TipProvider>
     </SessionProvider>
   );
 }

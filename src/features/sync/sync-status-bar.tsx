@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
-import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatRelative } from "@/lib/format";
 import { useNow } from "@/lib/use-now";
@@ -11,21 +10,6 @@ import { cn } from "@/lib/utils";
 const KEY = ["sync-runs", "latest"] as const;
 
 export function useLatestSyncRun() {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("sync-runs")
-      .on("postgres_changes", { event: "*", schema: "public", table: "sync_runs" }, () =>
-        queryClient.invalidateQueries({ queryKey: KEY }),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
   return useQuery({
     queryKey: KEY,
     queryFn: async () => {

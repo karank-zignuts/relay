@@ -99,6 +99,8 @@ When the owner says "sync the client channel" (or similar):
 
 A Claude skill file (Phase 3) will hold these steps so the sync is identical each time.
 
+**Attachments from Slack.** After syncing a thread that has files, `POST /api/v1/attachments` with `{ "thread_ts": "...", "files": [{ "file_name": "x.png", "mime_type": "image/png", "url": "<permalink>", "content_base64": "<optional, under ~3 MB>" }] }`. Files with `content_base64` are stored in Supabase Storage; otherwise the link is shown. Re-sending is safe (same name on the same task is skipped).
+
 ### 6.2 Database changes
 
 1. Write a new SQL migration in `supabase/migrations/`, following `ENGINEERING_STANDARDS.md` §6 (`deleted_at`, RLS, indexes, partial unique indexes).

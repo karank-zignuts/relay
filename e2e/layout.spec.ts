@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures";
 import { asRole } from "./roles";
+import { openTask } from "./helpers";
 
 asRole("project_manager");
 
@@ -58,7 +59,7 @@ test("the activity feed fits the screen and scrolls inside", async ({ page }) =>
 test("the task panel can be resized by dragging its edge", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 800 });
   await page.goto("/tasks");
-  await page.getByTestId("task-row").first().click({ timeout: 45_000 });
+  await openTask(page.getByTestId("task-row").first());
   const panel = page.getByTestId("task-drawer");
   await panel.waitFor();
   await page.waitForTimeout(300); // let the slide-in finish

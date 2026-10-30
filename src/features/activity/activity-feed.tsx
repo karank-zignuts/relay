@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/empty-state";
 import { formatDateTime, initials } from "@/lib/format";
+import { Tip } from "@/components/ui/tip";
+import { SHOW_TEST_USERS } from "@/features/users/test-users";
 import { useNow } from "@/lib/use-now";
 
 const PAGE = 50;
@@ -35,6 +37,8 @@ export function ActivityFeed() {
     queryFn: async ({ pageParam }) => {
       let request = createClient().from("activity_log").select("*").order("created_at", { ascending: false }).limit(PAGE);
       if (group !== ALL) request = request.like("action", `${group}%`);
+      // Entries made by the automated test accounts are noise for people.
+      if (!SHOW_TEST_USERS) request = request.not("actor_label", "like", "E2E %");
       if (pageParam) request = request.lt("created_at", pageParam);
       const { data, error } = await request;
       if (error) throw new Error(error.message);
@@ -73,12 +77,19 @@ export function ActivityFeed() {
         <Input aria-label="Search activity" placeholder="Search who or what…" className="w-64" value={search} onChange={(event) => setSearch(event.target.value)} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="activity-scroll">
-      {query.isLoading ? (
-        <div className="space-y-px overflow-hidden rounded-[20px] border border-border" aria-busy="true">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-14 w-full rounded-none" />
-          ))}
+      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]" data-testid="activity-scroll">
+      {query.isPending ? (
+        <div aria-busy="true" aria-label="Loading activity">
+          <Skeleton className="mb-2 ml-1 h-3 w-20" />
+          <ul className="divide-y divide-border overflow-hidden rounded-[20px] border border-border bg-background">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <li key={index} className="flex items-center gap-3 px-4 py-3">
+                <Skeleton className="size-7 shrink-0 rounded-full" />
+                <Skeleton className={index % 2 ? "h-3.5 w-2/3" : "h-3.5 w-1/2"} />
+                <Skeleton className="ml-auto h-3 w-10" />
+              </li>
+            ))}
+          </ul>
         </div>
       ) : query.isError ? (
         <EmptyState icon={History} title="Could not load activity" role="alert" action={<Button variant="outline" onClick={() => query.refetch()}>Try again</Button>}>
@@ -100,9 +111,11 @@ export function ActivityFeed() {
                     <span className="min-w-0 flex-1">
                       <span className="font-medium">{entry.actor_label}</span> <span className="text-graphite">{entry.summary}</span>
                     </span>
-                    <time dateTime={entry.created_at} title={formatDateTime(entry.created_at)} className="shrink-0 font-mono text-xs text-muted-foreground">
-                      {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(entry.created_at))}
-                    </time>
+                    <Tip label={formatDateTime(entry.created_at)}>
+                      <time dateTime={entry.created_at} className="shrink-0 font-mono text-xs text-muted-foreground">
+                        {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(entry.created_at))}
+                      </time>
+                    </Tip>
                   </li>
                 ))}
               </ul>
@@ -111,14 +124,14 @@ export function ActivityFeed() {
         </div>
       )}
 
+      </div>
       {query.hasNextPage ? (
-        <div className="py-4 text-center">
+        <div className="shrink-0 pt-1 text-center">
           <Button variant="outline" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
             {query.isFetchingNextPage ? "Loading…" : "Load more"}
           </Button>
         </div>
       ) : null}
-      </div>
     </div>
   );
 }

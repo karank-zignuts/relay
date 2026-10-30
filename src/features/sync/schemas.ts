@@ -33,3 +33,20 @@ export const syncRequestSchema = z.object({
 });
 
 export type SyncItem = z.infer<typeof syncItemSchema>;
+
+const attachmentSchema = z
+  .object({
+    file_name: z.string().trim().min(1).max(200),
+    mime_type: z.string().trim().max(100).optional(),
+    size_bytes: z.number().int().nonnegative().optional(),
+    /** A link to the file, for example its Slack permalink. Shown as a link when the file itself is not uploaded. */
+    url: z.url().optional(),
+    /** The file itself, base64 encoded (up to about 3 MB per request). Stored privately in Supabase Storage. */
+    content_base64: z.string().max(4_500_000).optional(),
+  })
+  .refine((file) => file.url || file.content_base64, "Send a url, content_base64, or both");
+
+export const attachmentsRequestSchema = z.object({
+  thread_ts: slackTs,
+  files: z.array(attachmentSchema).min(1).max(10),
+});

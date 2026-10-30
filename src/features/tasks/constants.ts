@@ -43,3 +43,15 @@ export const AREA_LABELS: Record<TaskChangeArea, string> = {
   design: "Design",
   other: "Other",
 };
+
+export const SORT_LABELS = {
+  task_number: "Number",
+  title: "Title",
+  task_date: "Date",
+  module: "Module",
+  status: "Status",
+  priority: "Priority",
+} as const;
+
+/** Tags offered before anyone has created their own. */
+export const BASE_TAGS = ["bug", "feature", "improvement", "question", "suggestion", "chore"] as const;

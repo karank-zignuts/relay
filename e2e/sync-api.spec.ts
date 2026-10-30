@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { authFile } from "./roles";
-import { bearer, createApiKey, syncItem } from "./helpers";
+import { bearer, createApiKey, syncItem, openTask } from "./helpers";
 
 test.use({ storageState: authFile("super_admin") });
 test.describe.configure({ mode: "serial" });
@@ -100,7 +100,7 @@ test("a person's edit survives the next sync", async ({ page, request }) => {
 
   await page.goto("/tasks");
   await page.getByLabel("Search tasks").fill("Original client wording");
-  await page.getByTestId("task-row").filter({ hasText: "Original client wording" }).click();
+  await openTask(page.getByTestId("task-row").filter({ hasText: "Original client wording" }));
   await page.getByLabel("Title").fill("Edited by the team");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("Task saved")).toBeVisible();

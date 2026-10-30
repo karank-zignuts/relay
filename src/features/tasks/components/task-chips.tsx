@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tip } from "@/components/ui/tip";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AREA_LABELS, ENV_LABELS, ENVIRONMENTS, PRIORITY_LABELS, STATUS_LABELS, type TaskChangeArea, type TaskEnv, type TaskPriority, type TaskStatus } from "../constants";
@@ -97,9 +98,8 @@ export function EnvStrip({ values }: { values: TaskEnv[] }) {
       {ENVIRONMENTS.map((env) => {
         const on = values.includes(env);
         return (
+          <Tip key={env} label={`${ENV_LABELS[env]}${on ? "" : " (not deployed)"}`}>
           <span
-            key={env}
-            title={`${ENV_LABELS[env]}${on ? "" : " (not deployed)"}`}
             className={cn(
               "grid size-[22px] place-items-center rounded-[6px] font-mono text-[10px] font-medium uppercase transition-colors",
               on ? "bg-primary text-primary-foreground" : "bg-transparent text-ash ring-1 ring-inset ring-border",
@@ -108,6 +108,7 @@ export function EnvStrip({ values }: { values: TaskEnv[] }) {
             {env[0]}
             {on ? <span className="sr-only">{ENV_LABELS[env]}</span> : null}
           </span>
+          </Tip>
         );
       })}
     </span>
@@ -148,14 +149,27 @@ export function ChipList({ items, emptyLabel = "—" }: { items: string[]; empty
   return <span className="flex flex-wrap gap-1">{items.map((item) => <span key={item} className="rounded-full bg-secondary px-2 py-0.5 text-xs">{item}</span>)}</span>;
 }
 
+/** Same size as an avatar, with a question mark: "nobody yet". */
+export function UnassignedAvatar({ className }: { className?: string }) {
+  return (
+    <span
+      role="img"
+      aria-label="Unassigned"
+      className={cn("grid size-6 shrink-0 place-items-center rounded-full border border-dashed border-ash bg-background text-[11px] font-medium text-muted-foreground transition-colors", className)}
+    >
+      ?
+    </span>
+  );
+}
+
 export function AssigneeStack({ ids, team, showName = false }: { ids: string[]; team: Map<string, TeamMember>; showName?: boolean }) {
-  if (ids.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
+  if (ids.length === 0) return <UnassignedAvatar />;
   const names = ids.map((id) => team.get(id)?.full_name || team.get(id)?.email || "Unknown");
   return (
     <span className="inline-flex items-center gap-2" aria-label={names.join(", ")}>
       <span className="flex -space-x-1">
         {ids.slice(0, 3).map((id, index) => (
-          <Avatar key={id} className="size-6 ring-2 ring-background after:hidden" title={names[index]}>
+          <Avatar key={id} className="size-6 ring-2 ring-background after:hidden">
             <AvatarFallback className="text-[10px]">{initials(names[index])}</AvatarFallback>
           </Avatar>
         ))}

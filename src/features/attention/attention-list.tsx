@@ -9,19 +9,19 @@ import { isAwaitingReply, isForgotten, type WorkingHours } from "@/lib/attention
 import { formatAge, formatDateTime, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TaskDrawer } from "@/features/tasks/components/task-drawer";
-import { useAppSettings, useDismissReply, useTasks, useTasksRealtime, useTeam } from "@/features/tasks/queries";
+import { useAppSettings, useAttention, useDismissReply, useTask, useTeam } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
 
 type Tab = "all" | "forgotten";
 
 export function AttentionList() {
-  useTasksRealtime();
-  const tasksQuery = useTasks();
+  const tasksQuery = useAttention();
   const settingsQuery = useAppSettings();
   const teamQuery = useTeam();
   const dismiss = useDismissReply();
   const [tab, setTab] = useState<Tab>("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const openQuery = useTask(openId);
 
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
   const settings = settingsQuery.data;
@@ -70,7 +70,7 @@ export function AttentionList() {
         ))}
       </div>
 
-      {tasksQuery.isLoading ? (
+      {tasksQuery.isPending ? (
         <div className="space-y-px overflow-hidden rounded-[20px] border border-border" aria-busy="true">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-[76px] w-full rounded-none" />
@@ -140,7 +140,7 @@ export function AttentionList() {
         </details>
       ) : null}
 
-      <TaskDrawer task={tasks.find((task) => task.id === openId) ?? null} tasks={tasks} team={teamQuery.data ?? []} onClose={() => setOpenId(null)} />
+      <TaskDrawer task={openQuery.data ?? null} team={teamQuery.data ?? []} onClose={() => setOpenId(null)} />
     </div>
   );
 }

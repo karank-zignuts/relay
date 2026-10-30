@@ -172,6 +172,16 @@ Never use native `<select>`, `<datalist>` or `<input type="date">`: browsers ren
 - `MultiSelectFilter` for choosing several values.
 All four share the 12px radius, hairline border and whisper shadow of the menus. Tests open them by label and click the option (`choose()` in `e2e/helpers.ts`).
 
+### 5.10b Pickers, tooltips, drag and focus (decided 2026-10-30)
+
+- **`ComboSelect`** (`components/ui/combo-select.tsx`) is the searchable picker, single or multi, with optional "create new". Modules, tags, assignees and every inline table edit use it. `OptionSelect` stays for short fixed lists.
+- **Inline edit:** assignees, priority, status and module change in place from a table row or board card. An unassigned task shows a dashed avatar with `?`, not the word "Unassigned".
+- **`Tip`** (`components/ui/tip.tsx`) is the only tooltip. Never use the `title` attribute for explanation.
+- **Pointer:** everything clickable shows a pointing hand, including dropdown options (global rule in `globals.css`). Disabled shows not-allowed.
+- **Focus** is graphite (`--ring`), never blue. **Drag and drop** uses Ember: a dashed placeholder where the card will land, and a faint Ember outline on the target column.
+- **Realtime:** the nav shows a Live dot. Changes by others appear without reload.
+- **Skeletons mirror the real layout** (same columns, row height, card shape) so nothing shifts when data arrives.
+
 ### 5.11 Emails
 
 Auth emails use the same language: Warm Taupe page, Eggshell card with a Stone hairline and 20px radius, Helvetica Neue light headline (Inter and Waldenburg are not safe in email clients), one black pill button, and a plain-text fallback link. They are generated from one layout in `scripts/build-email-templates.mjs` into `supabase/templates/`. Email HTML must stay table-based with inline styles.

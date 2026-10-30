@@ -1,5 +1,6 @@
 import { test } from "@playwright/test";
 import { asRole } from "./roles";
+import { openTask } from "./helpers";
 
 // Visual review only. Run with: E2E_SHOTS=1 npx playwright test e2e/shots.spec.ts
 test.skip(!process.env.E2E_SHOTS, "set E2E_SHOTS=1");
@@ -12,7 +13,7 @@ test("screenshots", async ({ page, browser }) => {
   await page.getByTestId("task-row").first().waitFor({ timeout: 45_000 });
   await page.waitForTimeout(600);
   await shot("tasks");
-  await page.getByTestId("task-row").nth(1).click();
+  await openTask(page.getByTestId("task-row").nth(1));
   await page.getByTestId("task-drawer").waitFor();
   await page.waitForTimeout(600);
   await shot("drawer");

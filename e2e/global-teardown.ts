@@ -7,6 +7,8 @@ export default async function globalTeardown() {
   if (!url || !key) return;
   const admin = createClient(url, key, { auth: { persistSession: false } });
   const now = new Date().toISOString();
+  await admin.from("modules").update({ deleted_at: now }).like("name", "E2E%").is("deleted_at", null);
   await admin.from("tasks").update({ deleted_at: now }).eq("slack_channel_id", "C0E2ETEST").is("deleted_at", null);
+  await admin.from("modules").update({ deleted_at: now }).like("name", "E2E%").is("deleted_at", null);
   await admin.from("tasks").update({ deleted_at: now }).or("title.like.E2E task %,title.like.RLS task %").is("deleted_at", null);
 }

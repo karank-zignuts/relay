@@ -1,37 +1,61 @@
 "use client";
 
-import { ChevronDown, Inbox, LayoutGrid, Plus, SearchX, Table2 } from "lucide-react";
+import { ChevronDown, Inbox, LayoutGrid, Plus, SearchX, Table2, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tip } from "@/components/ui/tip";
 import { can } from "@/lib/auth/roles";
+import { useDebounced } from "@/lib/use-debounced";
 import { usePersisted } from "@/lib/use-persisted";
 import { cn } from "@/lib/utils";
-import { EMPTY_FILTERS, filterTasks, sortTasks, type SortDirection, type SortKey, type TaskFilters } from "../filters";
-import { useTasks, useTasksRealtime, useTeam } from "../queries";
+import { SORT_LABELS } from "../constants";
+import { activeFilterCount, EMPTY_FILTERS, nextSort, toRpcArgs, type SortKey, type SortState, type TaskFilters } from "../filters";
+import { useTask, useTaskCounts, useTaskPage, useTeam } from "../queries";
 import { CreateTaskDialog } from "./create-task-dialog";
-import { KanbanBoard } from "./kanban-board";
+import { BoardSkeleton, KanbanBoard } from "./kanban-board";
 import { TaskDrawer } from "./task-drawer";
 import { TaskFiltersBar } from "./task-filters-bar";
-import { TaskTable } from "./task-table";
+import { TaskTable, TaskTableSkeleton } from "./task-table";
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
-export function TasksWorkspace({ view }: { view: "table" | "board" }) {
+const VIEWS = [
+  { href: "/tasks", id: "table", label: "Table", Icon: Table2 },
+  { href: "/board", id: "board", label: "Board", Icon: LayoutGrid },
+] as const;
+
+export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
   const user = useSession();
-  useTasksRealtime();
-  const tasksQuery = useTasks();
-  const teamQuery = useTeam();
-  const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
-  const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({ key: "task_date", direction: "desc" });
+  const pathname = usePathname();
+  const view: "table" | "board" = pathname.startsWith("/board") ? "board" : "table";
+
+  const [filters, setFiltersRaw] = useState<TaskFilters>(EMPTY_FILTERS);
+  const [sort, setSortRaw] = useState<SortState>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSizeRaw] = usePersisted<number>("relay.page-size", 50);
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [boardTotal, setBoardTotal] = useState<number | null>(null);
   // The header is compact by default so the work area gets the screen. The arrow next to the title opens the filters.
   const [expanded, setExpanded] = usePersisted<boolean>("relay.filters-open", false);
   const canCreate = can(user.role, "tasks.create");
+
+  const setFilters = (next: TaskFilters) => {
+    setFiltersRaw(next);
+    setPage(0);
+  };
+  const setSort = (next: SortState) => {
+    setSortRaw(next);
+    setPage(0);
+  };
+
+  // Typing searches on the server, but only once the typing pauses.
+  const search = useDebounced(filters.search, 250);
+  const applied = useMemo(() => ({ ...filters, search }), [filters, search]);
 
   // "/" jumps to search, "n" starts a new task. Both are ignored while typing.
   useEffect(() => {
@@ -49,47 +73,46 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [canCreate]);
 
-  const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
+  const teamQuery = useTeam();
+  const countsQuery = useTaskCounts();
+  const args = useMemo(() => toRpcArgs(applied, sort, { limit: pageSize, offset: page * pageSize }), [applied, sort, pageSize, page]);
+  const pageQuery = useTaskPage(args, view === "table");
+  const openQuery = useTask(openId);
+
   const team = useMemo(() => teamQuery.data ?? [], [teamQuery.data]);
   const teamById = useMemo(() => new Map(team.map((member) => [member.id, member])), [team]);
-  const shown = useMemo(() => sortTasks(filterTasks(tasks, filters), sort.key, sort.direction), [tasks, filters, sort]);
-  const openTask = tasks.find((task) => task.id === openId) ?? null;
-  const open = tasks.filter((task) => task.status !== "done").length;
+  const counts = countsQuery.data;
+  const filtered = activeFilterCount(applied) > 0;
 
-  const onSort = (key: SortKey) => setSort((previous) => ({ key, direction: previous.key === key && previous.direction === "asc" ? "desc" : "asc" }));
+  const onSort = (key: SortKey) => setSort(nextSort(sort, key));
+  const shown = view === "table" ? (pageQuery.data?.total ?? null) : boardTotal;
+  const members = useMemo(() => team.filter((member) => member.is_active), [team]);
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 flex-col gap-3 px-4 pt-4 pb-3 animate-page-in sm:px-6">
+    <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 flex-col gap-3 px-4 pt-4 pb-3 sm:px-6">
+      {children}
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="text-2xl font-light leading-none tracking-[-0.02em]">{view === "table" ? "Tasks" : "Board"}</h1>
-        {tasksQuery.isSuccess ? (
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {open} open · {tasks.length} total
-          </span>
-        ) : null}
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-label={expanded ? "Hide filters" : "Show filters"}
-          title={expanded ? "Hide filters" : "Show filters"}
-          onClick={() => setExpanded(!expanded)}
-          className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-secondary hover:text-foreground"
-        >
-          <ChevronDown className={cn("size-4 transition-transform duration-100", expanded && "rotate-180")} />
-        </button>
+        <span className="min-w-[8.5rem] text-sm text-muted-foreground tabular-nums">{counts ? `${counts.open} open · ${counts.all} total` : ""}</span>
+        <Tip label={expanded ? "Hide filters" : "Show filters"}>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-label={expanded ? "Hide filters" : "Show filters"}
+            onClick={() => setExpanded(!expanded)}
+            className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-75 hover:bg-secondary hover:text-foreground"
+          >
+            <ChevronDown className={cn("size-4 transition-transform duration-200 ease-out-quint", expanded && "rotate-180")} />
+          </button>
+        </Tip>
         <div className="ml-auto flex items-center gap-2">
-          <nav aria-label="View" className="flex rounded-full border border-[#e5e5e5] bg-background p-0.5">
-            {(
-              [
-                { href: "/tasks", id: "table", label: "Table", Icon: Table2 },
-                { href: "/board", id: "board", label: "Board", Icon: LayoutGrid },
-              ] as const
-            ).map(({ href, id, label, Icon }) => (
+          <nav aria-label="View" className="relative flex rounded-full border border-stone bg-background p-0.5">
+            {VIEWS.map(({ href, id, label, Icon }) => (
               <Link
                 key={id}
                 href={href}
                 aria-current={view === id ? "page" : undefined}
-                className={cn("flex h-7 items-center gap-1.5 rounded-full px-3 text-sm transition-colors duration-75", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
+                className={cn("flex h-7 items-center gap-1.5 rounded-full px-3 text-sm transition-[background-color,color] duration-150", view === id ? "bg-primary text-primary-foreground" : "text-graphite hover:text-foreground")}
               >
                 <Icon className="size-4" /> {label}
               </Link>
@@ -104,39 +127,63 @@ export function TasksWorkspace({ view }: { view: "table" | "board" }) {
         </div>
       </div>
 
-      {tasksQuery.isLoading ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-3" aria-busy="true" aria-label="Loading tasks">
-          <Skeleton className="h-9 w-80 rounded-full" />
-          <div className="min-h-0 flex-1 space-y-px overflow-hidden rounded-[20px] border border-border">
-            {Array.from({ length: 9 }).map((_, index) => (
-              <Skeleton key={index} className="h-[58px] w-full rounded-none" />
-            ))}
-          </div>
-        </div>
-      ) : tasksQuery.isError ? (
-        <EmptyState icon={Inbox} title="Could not load tasks" action={<Button variant="outline" onClick={() => tasksQuery.refetch()}>Try again</Button>} role="alert">
-          Check your connection and try again.
-        </EmptyState>
-      ) : (
-        <>
-          <TaskFiltersBar tasks={tasks} team={team} filters={filters} onChange={setFilters} shown={shown.length} expanded={expanded} />
-          {tasks.length === 0 ? (
-            <EmptyState icon={Inbox} title="No tasks yet" data-testid="empty-state" action={canCreate ? <Button onClick={() => setCreating(true)}><Plus /> New task</Button> : undefined}>
-              Ask Claude to sync the client channel and every request lands here, one row per thread. You can also add a task by hand.
-            </EmptyState>
-          ) : shown.length === 0 ? (
-            <EmptyState icon={SearchX} title="No tasks match these filters" data-testid="no-match" action={<Button variant="outline" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</Button>}>
-              Try removing a filter or searching for something broader.
-            </EmptyState>
-          ) : view === "table" ? (
-            <TaskTable tasks={shown} team={teamById} sort={sort} onSort={onSort} onOpen={(task) => setOpenId(task.id)} activeId={openId} fetching={tasksQuery.isFetching} />
-          ) : (
-            <KanbanBoard tasks={shown} team={teamById} onOpen={(task) => setOpenId(task.id)} />
-          )}
-        </>
-      )}
+      <TaskFiltersBar team={team} filters={filters} onChange={setFilters} shown={shown} all={counts?.all ?? null} expanded={expanded} />
 
-      <TaskDrawer task={openTask} tasks={tasks} team={team} onClose={() => setOpenId(null)} />
+      {view === "board" && sort ? (
+        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+          Sorted by {SORT_LABELS[sort.key].toLowerCase()} ({sort.direction === "asc" ? "ascending" : "descending"}). Dragging a card changes its status only.
+          <Button variant="ghost" size="xs" onClick={() => setSort(null)}>
+            <X /> Back to manual order
+          </Button>
+        </div>
+      ) : null}
+
+      <div key={view} className="flex min-h-0 flex-1 flex-col animate-page-in">
+        {view === "table" ? (
+          pageQuery.isError ? (
+            <EmptyState icon={Inbox} title="Could not load tasks" action={<Button variant="outline" onClick={() => pageQuery.refetch()}>Try again</Button>} role="alert">
+              Check your connection and try again.
+            </EmptyState>
+          ) : pageQuery.isPending ? (
+            <TaskTableSkeleton />
+          ) : pageQuery.data.total === 0 ? (
+            filtered ? (
+              <EmptyState icon={SearchX} title="No tasks match these filters" data-testid="no-match" action={<Button variant="outline" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</Button>}>
+                Try removing a filter or searching for something broader.
+              </EmptyState>
+            ) : (
+              <EmptyState icon={Inbox} title="No tasks yet" data-testid="empty-state" action={canCreate ? <Button onClick={() => setCreating(true)}><Plus /> New task</Button> : undefined}>
+                Ask Claude to sync the client channel and every request lands here, one row per thread. You can also add a task by hand.
+              </EmptyState>
+            )
+          ) : (
+            <TaskTable
+              tasks={pageQuery.data.rows}
+              total={pageQuery.data.total}
+              team={teamById}
+              members={members}
+              sort={sort}
+              onSort={onSort}
+              page={page}
+              pageSize={pageSize}
+              onPage={setPage}
+              onPageSize={(size) => {
+                setPageSizeRaw(size);
+                setPage(0);
+              }}
+              onOpen={(task) => setOpenId(task.id)}
+              activeId={openId}
+              fetching={pageQuery.isFetching}
+            />
+          )
+        ) : teamQuery.isPending ? (
+          <BoardSkeleton />
+        ) : (
+          <KanbanBoard filters={applied} sort={sort} hideDone={filters.hideDone} team={teamById} members={members} onOpen={(task) => setOpenId(task.id)} onTotals={setBoardTotal} />
+        )}
+      </div>
+
+      <TaskDrawer task={openQuery.data ?? null} onClose={() => setOpenId(null)} team={team} />
       <CreateTaskDialog open={creating} onOpenChange={setCreating} />
     </div>
   );

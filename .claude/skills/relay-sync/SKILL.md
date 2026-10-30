@@ -31,7 +31,8 @@ If something is missing, ask the user once and stop. Do not guess.
 5. **Build each item** (see Field guide). Send only what you can support from the messages.
 6. **Jira.** If a message contains a key like `ABC-123` or a Jira link, read it with the Atlassian connector and send `jira_key`, `jira_url` (`https://$RELAY_JIRA_SITE/browse/ABC-123`) and `jira_status` (the current status name).
 7. **Push.** `POST $RELAY_URL/api/v1/sync` with `{ "items": [...] }`, at most 200 items per request (split larger batches). Re-sending is safe: threads are matched by `thread_ts`.
-8. **Report** in a few lines: created / updated / unchanged / failed, then the threads that now need a reply (client spoke last). Mention any failed items with their `thread_ts` and message.
+8. **Attachments.** For threads whose client messages include files, send them with `POST $RELAY_URL/api/v1/attachments` (`thread_ts`, `files[]` with `file_name`, `mime_type`, `url`, and `content_base64` when you can read the file). Repeat sends are skipped.
+9. **Report** in a few lines: created / updated / unchanged / failed, then the threads that now need a reply (client spoke last). Mention any failed items with their `thread_ts` and message.
 
 ## Field guide
 

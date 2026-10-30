@@ -16,6 +16,8 @@
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-page-in: page-in 160ms var(--ease-out-quint) both;
+  --animate-row-in: row-in 220ms var(--ease-out-quint) both;
+  --animate-drop-in: drop-in 140ms var(--ease-out-quint) both;
   --animate-pop: pop 120ms var(--ease-out-quint) both;
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -73,7 +75,7 @@
   --destructive: #ff4704;
   --border: #ebe8e4;
   --input: #ebe8e4;
-  --ring: #0447ff;
+  --ring: #44403b;
   --chart-1: #44403b;
   --chart-2: #777169;
   --chart-3: #a59f97;
@@ -87,7 +89,7 @@
   --sidebar-accent: #ebe8e4;
   --sidebar-accent-foreground: #000000;
   --sidebar-border: #ebe8e4;
-  --sidebar-ring: #0447ff;
+  --sidebar-ring: #44403b;
   --graphite: #44403b;
   --ash: #a59f97;
   --stone: #ebe8e4;
@@ -128,6 +130,36 @@
   button {
     -webkit-tap-highlight-color: transparent;
   }
+  /* Anything you can click shows a pointing hand, including dropdown options. Disabled things say so. */
+  a[href],
+  button:not(:disabled),
+  summary,
+  label[for],
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"]:not([data-disabled]),
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemcheckbox"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]),
+  [role="tab"],
+  [role="checkbox"],
+  [role="switch"],
+  [role="combobox"]:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"],
+  [data-disabled] {
+    cursor: not-allowed;
+  }
+  [draggable="true"] {
+    cursor: grab;
+  }
+  [draggable="true"]:active {
+    cursor: grabbing;
+  }
+  [role="separator"][aria-orientation="vertical"] {
+    cursor: col-resize;
+  }
   table {
     font-variant-numeric: tabular-nums;
   }
@@ -162,6 +194,28 @@
   from {
     opacity: 0;
     transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.4);
   }
   to {
     opacity: 1;

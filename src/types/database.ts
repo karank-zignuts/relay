@@ -169,6 +169,74 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_reads: {
+        Row: {
+          comment_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reads_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -314,12 +382,76 @@ export type Database = {
           },
         ]
       }
+      task_attachments: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          external_url: string | null
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          source: Database["public"]["Enums"]["attachment_source"]
+          storage_path: string | null
+          task_id: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          external_url?: string | null
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          source: Database["public"]["Enums"]["attachment_source"]
+          storage_path?: string | null
+          task_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          external_url?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          source?: Database["public"]["Enums"]["attachment_source"]
+          storage_path?: string | null
+          task_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           author_id: string
           body: string
           created_at: string
           deleted_at: string | null
+          edited_at: string | null
           id: string
           task_id: string
           updated_at: string
@@ -329,6 +461,7 @@ export type Database = {
           body: string
           created_at?: string
           deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           task_id: string
           updated_at?: string
@@ -338,6 +471,7 @@ export type Database = {
           body?: string
           created_at?: string
           deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           task_id?: string
           updated_at?: string
@@ -361,6 +495,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          board_rank: number
           changes_in: Database["public"]["Enums"]["task_change_area"][]
           created_at: string
           created_by: string | null
@@ -390,6 +525,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          board_rank?: number
           changes_in?: Database["public"]["Enums"]["task_change_area"][]
           created_at?: string
           created_by?: string | null
@@ -414,11 +550,12 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           tags?: string[]
           task_date?: string
-          task_number?: never
+          task_number?: number
           title: string
           updated_at?: string
         }
         Update: {
+          board_rank?: number
           changes_in?: Database["public"]["Enums"]["task_change_area"][]
           created_at?: string
           created_by?: string | null
@@ -443,7 +580,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           tags?: string[]
           task_date?: string
-          task_number?: never
+          task_number?: number
           title?: string
           updated_at?: string
         }
@@ -473,16 +610,46 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      delete_attachment: {
+        Args: { p_attachment_id: string }
+        Returns: undefined
+      }
       delete_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_task: { Args: { p_task_id: string }; Returns: undefined }
       dismiss_reply: {
         Args: { p_dismissed: boolean; p_task_id: string }
         Returns: undefined
       }
+      edit_comment: {
+        Args: { p_body: string; p_comment_id: string }
+        Returns: undefined
+      }
       is_admin_or_pm: { Args: never; Returns: boolean }
       is_assigned: { Args: { p_task_id: string }; Returns: boolean }
       is_privileged_caller: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      list_tasks: {
+        Args: {
+          p_areas?: Database["public"]["Enums"]["task_change_area"][]
+          p_assignees?: string[]
+          p_dir?: string
+          p_envs?: Database["public"]["Enums"]["task_env"][]
+          p_from?: string
+          p_hide_done?: boolean
+          p_jira?: string
+          p_level?: string
+          p_limit?: number
+          p_modules?: string[]
+          p_offset?: number
+          p_priority?: Database["public"]["Enums"]["task_priority"][]
+          p_search?: string
+          p_sort?: string
+          p_status?: Database["public"]["Enums"]["task_status"][]
+          p_tags?: string[]
+          p_to?: string
+        }
+        Returns: Json
+      }
       log_activity: {
         Args: {
           p_action: string
@@ -493,12 +660,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_comments_read: { Args: { p_task_id: string }; Returns: undefined }
       sync_threads: {
         Args: { p_actor: string; p_api_key_id: string; p_items: Json }
         Returns: Json
       }
     }
     Enums: {
+      attachment_source: "client" | "team"
       sync_status: "running" | "success" | "partial" | "failed"
       task_change_area: "fe" | "be" | "db" | "devops" | "design" | "other"
       task_env: "local" | "development" | "staging" | "production"
@@ -641,6 +810,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      attachment_source: ["client", "team"],
       sync_status: ["running", "success", "partial", "failed"],
       task_change_area: ["fe", "be", "db", "devops", "design", "other"],
       task_env: ["local", "development", "staging", "production"],

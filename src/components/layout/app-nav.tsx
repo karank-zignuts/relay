@@ -7,7 +7,9 @@ import { signOut } from "@/app/(auth)/actions";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tip } from "@/components/ui/tip";
 import { can, ROLE_LABELS, type Permission } from "@/lib/auth/roles";
+import { useRealtimeStatus } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 
 const NAV: { href: string; label: string; permission?: Permission }[] = [
@@ -21,6 +23,7 @@ const NAV: { href: string; label: string; permission?: Permission }[] = [
 export function AppNav({ attentionCount }: { attentionCount: number }) {
   const pathname = usePathname();
   const user = useSession();
+  const live = useRealtimeStatus();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">
@@ -49,6 +52,12 @@ export function AppNav({ attentionCount }: { attentionCount: number }) {
             );
           })}
         </nav>
+        <Tip label={live === "live" ? "Live: changes from your team appear instantly" : live === "offline" ? "Offline: reconnecting…" : "Connecting…"} side="bottom">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="live-status" data-status={live}>
+            <span className={cn("size-1.5 rounded-full transition-colors duration-300", live === "live" ? "bg-foreground" : live === "offline" ? "bg-ember" : "animate-pulse bg-ash")} aria-hidden />
+            <span className="hidden sm:inline">{live === "live" ? "Live" : live === "offline" ? "Offline" : "Connecting"}</span>
+          </span>
+        </Tip>
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
             <UserRound /> {user.fullName || user.email} <ChevronDown />

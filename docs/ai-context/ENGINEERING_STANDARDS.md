@@ -130,6 +130,10 @@ Use the domain terms from `PROJECT_CONTEXT.md` §6 exactly.
 
 ---
 
+### Lists are server-side
+
+Filtering, sorting and paging of any list that can grow happen in the database, never in the browser. Tasks use the `list_tasks` function (one page plus counts per call; the board loads 20 cards per column and more on scroll). Task numbers are gapless among live tasks (`1, 2, 3 …`) and assigned by a trigger. The board keeps a manual order in `tasks.board_rank`. Modules live in the `modules` table and are appended automatically when a task uses a new one. Files live in the private `task-attachments` bucket with rows in `task_attachments` (`source` is `client` or `team`).
+
 ## 7. Sync Code
 
 1. A thread maps to **one** task. The key is `slack_thread_ts` (a standalone message uses its own `ts`).

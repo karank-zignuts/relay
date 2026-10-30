@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { asRole } from "./roles";
-import { choose, uid } from "./helpers";
+import { choose, openTask, pickCombo, uid } from "./helpers";
 
 asRole("project_manager");
 test.describe.configure({ mode: "serial" });
@@ -13,7 +13,7 @@ test("creates a task and finds it with search", async ({ page }) => {
   await page.getByRole("button", { name: "New task" }).click();
   await page.getByLabel("Title", { exact: true }).fill(title);
   await page.getByLabel("Description", { exact: true }).fill("Created from the e2e suite");
-  await page.getByLabel("Module", { exact: true }).fill("E2E");
+  await pickCombo(page, "Module", "E2E");
   await page.getByRole("button", { name: "Create task" }).click();
   await expect(page.getByText("Task created")).toBeVisible();
 
@@ -38,7 +38,7 @@ test("filters narrow the table and clear again", async ({ page }) => {
 test("edits status, assigns a person and comments", async ({ page }) => {
   await page.goto("/tasks");
   await page.getByLabel("Search tasks").fill(title);
-  await page.getByTestId("task-row").filter({ hasText: title }).click();
+  await openTask(page.getByTestId("task-row").filter({ hasText: title }));
 
   const drawer = page.getByTestId("task-drawer");
   await choose(drawer, "Status", "In progress");
@@ -54,7 +54,7 @@ test("edits status, assigns a person and comments", async ({ page }) => {
   await expect(row).toContainText("Urgent");
   await expect(row).toContainText("Staging");
 
-  await page.getByTestId("task-row").filter({ hasText: title }).click();
+  await openTask(page.getByTestId("task-row").filter({ hasText: title }));
   const comment = `Looks good ${uid()}`;
   await page.getByLabel("Write a comment").fill(comment);
   await page.getByRole("button", { name: "Send comment" }).click();
@@ -108,10 +108,11 @@ test("themed dropdowns: select, suggestions and date picker", async ({ page }) =
   await choose(page, "Jira filter", "Has Jira ticket");
   await expect(page.getByTestId("task-count")).toContainText("of");
 
-  // Suggest input: module field offers existing modules but accepts new text.
-  await page.getByRole("button", { name: "Clear 3 filters" }).or(page.getByRole("button", { name: /^Clear \d+ filters?$/ })).click();
-  await page.getByTestId("task-row").first().click();
-  const moduleInput = page.getByTestId("task-drawer").getByLabel("Module", { exact: true });
-  await moduleInput.fill("Brand new module name");
-  await expect(moduleInput).toHaveValue("Brand new module name");
+  // Module is a searchable select that also accepts a brand new name.
+  await page.getByRole("button", { name: /^Clear \d+ filters?$/ }).click();
+  await openTask(page.getByTestId("task-row").first());
+  const drawer = page.getByTestId("task-drawer");
+  await drawer.getByLabel("Module", { exact: true }).click();
+  await page.getByRole("textbox", { name: /Find or add/ }).fill("Brand new module name");
+  await expect(page.getByRole("option", { name: /Create .*Brand new module name/ })).toBeVisible();
 });

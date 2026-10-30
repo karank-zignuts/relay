@@ -47,7 +47,7 @@ export function SuggestInput({
           >
             <Autocomplete.List>
               {(item: string) => (
-                <Autocomplete.Item key={item} value={item} className="flex cursor-default items-center rounded-[8px] px-2.5 py-2 text-sm outline-none select-none data-highlighted:bg-secondary">
+                <Autocomplete.Item key={item} value={item} className="flex cursor-pointer items-center rounded-[8px] px-2.5 py-2 text-sm outline-none select-none data-highlighted:bg-secondary">
                   {item}
                 </Autocomplete.Item>
               )}
