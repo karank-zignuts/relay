@@ -397,6 +397,8 @@ export function useUploadAttachments(taskId: string) {
       for (const file of files) {
         try {
           await api.uploadAttachment(taskId, file, userId);
+          // Refresh as each file lands, so its tile turns into the real card while the others are still going.
+          await queryClient.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
         } catch (error) {
           failures.push((error as Error).message);
         }
@@ -404,9 +406,10 @@ export function useUploadAttachments(taskId: string) {
       if (failures.length) throw new Error(failures.join(" "));
     },
     onError: (error: Error) => toast.error(error.message),
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
+    // Returned so the upload only counts as settled once the real attachments are in the cache.
+    onSettled: async () => {
       void refreshTasks(queryClient);
+      await queryClient.invalidateQueries({ queryKey: taskKeys.attachments(taskId) });
     },
   });
 }

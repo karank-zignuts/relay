@@ -24,13 +24,20 @@ const formatSize = (bytes: number | null) => {
 
 const isImage = (attachment: Attachment) => Boolean(attachment.mime_type?.startsWith("image/")) || /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(attachment.file_name);
 
-function useAttachmentUrl(attachment: Attachment) {
+function useAttachmentUrl(attachment: Attachment, enabled = true) {
   return useQuery({
     queryKey: ["attachment-url", attachment.id],
     queryFn: () => attachmentUrl(attachment),
     staleTime: 50 * 60_000, // signed links last an hour
+    enabled,
   });
 }
+
+/** A file that is being uploaded. It renders through the same card as a saved file, so the tile never remounts when the upload finishes. */
+type PendingUpload = { key: string; file: File; startedAt: string };
+
+// Saved files and their uploads share one key (name, size and which copy of that file), which is what keeps the card mounted.
+const uploadKey = (name: string, size: number | null, nth: number) => `${name}:${size ?? 0}:${nth}`;
 
 function Actions({ attachment, url, canDelete, onDelete, overlay }: { attachment: Attachment; url: string | null | undefined; canDelete: boolean; onDelete: () => void; overlay?: boolean }) {
   const button = cn("grid size-8 place-items-center rounded-full transition-colors", overlay ? "bg-background/90 text-foreground shadow-sm hover:bg-background" : "text-muted-foreground hover:bg-secondary hover:text-foreground");
@@ -54,13 +61,13 @@ function Actions({ attachment, url, canDelete, onDelete, overlay }: { attachment
   );
 }
 
-function Caption({ attachment }: { attachment: Attachment }) {
+function Caption({ attachment, pending }: { attachment: Attachment; pending?: boolean }) {
   const who = attachment.source === "client" ? "Client (Slack)" : attachment.uploader?.full_name || attachment.uploader?.email || attachment.uploaded_by_label || "Former member";
   return (
     <div className="min-w-0 flex-1">
       <p className="truncate text-sm font-medium">{attachment.file_name}</p>
       <p className="truncate text-xs text-muted-foreground">
-        {who} · <time dateTime={attachment.created_at} title={formatDateTime(attachment.created_at)}>{formatRelative(attachment.created_at)}</time>
+        {pending ? "Uploading…" : <>{who} · <time dateTime={attachment.created_at} title={formatDateTime(attachment.created_at)}>{formatRelative(attachment.created_at)}</time></>}
         {attachment.size_bytes ? ` · ${formatSize(attachment.size_bytes)}` : ""}
       </p>
     </div>
@@ -68,34 +75,39 @@ function Caption({ attachment }: { attachment: Attachment }) {
 }
 
 /** Pictures show as tiles that reveal themselves; other files are a plain row. */
-function AttachmentCard({ attachment, canDelete, onDelete }: { attachment: Attachment; canDelete: boolean; onDelete: () => void }) {
-  const { data: url } = useAttachmentUrl(attachment);
+function AttachmentCard({ attachment, canDelete, onDelete, pending = false }: { attachment: Attachment; canDelete: boolean; onDelete: () => void; pending?: boolean }) {
+  const { data: queried } = useAttachmentUrl(attachment, !pending);
+  const url = pending ? undefined : queried;
   if (isImage(attachment)) {
     return (
-      <li className="group/file overflow-hidden rounded-[12px] border border-border bg-background transition-colors duration-75 hover:border-ash" data-testid="attachment">
+      <li className="group/file overflow-hidden rounded-[12px] border border-border bg-background transition-colors duration-75 hover:border-ash" data-testid="attachment" data-pending={pending || undefined}>
         <div className="relative">
-          <a href={url ?? undefined} target="_blank" rel="noreferrer" aria-label={`Open ${attachment.file_name}`} className="block">
+          <a href={url ?? undefined} target="_blank" rel="noreferrer" aria-label={pending ? `Uploading ${attachment.file_name}` : `Open ${attachment.file_name}`} className="block">
             <ImageLoader src={url} alt={attachment.file_name} aspect={4 / 3} gridSize={10} cellGap={3} />
           </a>
-          <div className="absolute top-2 right-2 z-20 opacity-0 transition-opacity duration-75 group-focus-within/file:opacity-100 group-hover/file:opacity-100">
-            <Actions attachment={attachment} url={url} canDelete={canDelete} onDelete={onDelete} overlay />
-          </div>
+          {pending ? null : (
+            <div className="absolute top-2 right-2 z-20 opacity-0 transition-opacity duration-75 group-focus-within/file:opacity-100 group-hover/file:opacity-100">
+              <Actions attachment={attachment} url={url} canDelete={canDelete} onDelete={onDelete} overlay />
+            </div>
+          )}
         </div>
         <div className="flex p-2.5">
-          <Caption attachment={attachment} />
+          <Caption attachment={attachment} pending={pending} />
         </div>
       </li>
     );
   }
   return (
-    <li className="group/file relative flex items-center gap-3 rounded-[12px] border border-border bg-background p-2 pr-3 transition-colors duration-75 hover:border-ash sm:col-span-2" data-testid="attachment">
+    <li className={cn("group/file relative flex items-center gap-3 rounded-[12px] border border-border bg-background p-2 pr-3 transition-[border-color,opacity] duration-75 hover:border-ash sm:col-span-2", pending && "opacity-60")} data-testid="attachment" data-pending={pending || undefined}>
       <a href={url ?? undefined} target="_blank" rel="noreferrer" className="grid size-12 shrink-0 place-items-center rounded-[8px] bg-secondary text-muted-foreground" aria-label={`Open ${attachment.file_name}`}>
         <FileText className="size-5" aria-hidden />
       </a>
-      <Caption attachment={attachment} />
-      <div className="opacity-0 transition-opacity duration-75 group-focus-within/file:opacity-100 group-hover/file:opacity-100">
-        <Actions attachment={attachment} url={url} canDelete={canDelete} onDelete={onDelete} />
-      </div>
+      <Caption attachment={attachment} pending={pending} />
+      {pending ? null : (
+        <div className="opacity-0 transition-opacity duration-75 group-focus-within/file:opacity-100 group-hover/file:opacity-100">
+          <Actions attachment={attachment} url={url} canDelete={canDelete} onDelete={onDelete} />
+        </div>
+      )}
     </li>
   );
 }
@@ -108,16 +120,62 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
   const remove = useDeleteAttachment(taskId);
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [pending, setPending] = useState<PendingUpload[]>([]);
   const canUpload = can(user.role, "comments.create");
   const isAdmin = user.role === "super_admin" || user.role === "project_manager";
 
   const client = attachments?.filter((item) => item.source === "client") ?? [];
-  const team = attachments?.filter((item) => item.source === "team") ?? [];
+  const savedTeam = attachments?.filter((item) => item.source === "team") ?? [];
+
+  // Saved files and uploads in one list, each under a stable key. An upload keeps its card (and the blinking squares) until
+  // the saved file with the same key shows up, and then that same card carries on into the reveal. Nothing unmounts in between.
+  const seen = new Map<string, number>();
+  const nextCopy = (name: string, size: number | null) => {
+    const base = `${name}:${size ?? 0}`;
+    const nth = seen.get(base) ?? 0;
+    seen.set(base, nth + 1);
+    return nth;
+  };
+  const saved = savedTeam.map((item) => ({ key: uploadKey(item.file_name, item.size_bytes, nextCopy(item.file_name, item.size_bytes)), item }));
+  const savedKeys = new Set(saved.map((entry) => entry.key));
+  const uploading = pending.filter((entry) => !savedKeys.has(entry.key));
+  const teamCount = saved.length + uploading.length;
 
   function add(files: FileList | File[] | null) {
     const list = files ? [...files] : [];
-    if (list.length && canUpload) upload.mutate({ files: list, userId: user.id });
+    if (!list.length || !canUpload) return;
+    const counts = new Map<string, number>();
+    for (const entry of [...saved.map((s) => s.item), ...pending.map((p) => ({ file_name: p.file.name, size_bytes: p.file.size }))]) {
+      const base = `${entry.file_name}:${entry.size_bytes ?? 0}`;
+      counts.set(base, (counts.get(base) ?? 0) + 1);
+    }
+    const batch: PendingUpload[] = list.map((file) => {
+      const base = `${file.name}:${file.size}`;
+      const nth = counts.get(base) ?? 0;
+      counts.set(base, nth + 1);
+      return { key: uploadKey(file.name, file.size, nth), file, startedAt: new Date().toISOString() };
+    });
+    setPending((current) => [...current, ...batch]);
+    // Once settled the saved files are in the list. Drop whatever is left (uploads that failed).
+    upload.mutate({ files: list, userId: user.id }, { onSettled: () => setPending((current) => current.filter((entry) => !batch.some((b) => b.key === entry.key))) });
   }
+
+  const pendingAttachment = (entry: PendingUpload): Attachment => ({
+    id: `pending-${entry.key}`,
+    task_id: taskId,
+    file_name: entry.file.name,
+    mime_type: entry.file.type || null,
+    size_bytes: entry.file.size,
+    source: "team",
+    storage_path: null,
+    external_url: null,
+    created_at: entry.startedAt,
+    updated_at: entry.startedAt,
+    deleted_at: null,
+    uploaded_by: user.id,
+    uploaded_by_label: null,
+    uploader: { id: user.id, full_name: user.fullName, email: user.email },
+  });
 
   return (
     <section aria-label="Attachments" className="space-y-4">
@@ -145,22 +203,16 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
 
       <div className="space-y-2" data-testid="team-attachments">
         <h4 className="flex items-center gap-1.5 text-sm font-medium">
-          From the team <span className="text-xs font-normal text-muted-foreground tabular-nums">{team.length}</span>
+          From the team <span className="text-xs font-normal text-muted-foreground tabular-nums">{teamCount}</span>
         </h4>
         {isPending ? <Skeleton className="h-[66px] w-full rounded-[12px]" /> : null}
-        {team.length > 0 || upload.isPending ? (
+        {teamCount > 0 ? (
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {team.map((item) => (
-              <AttachmentCard key={item.id} attachment={item} canDelete={item.uploaded_by === user.id || isAdmin} onDelete={() => remove.mutate(item.id)} />
-            ))}
-            {upload.isPending
-              ? (upload.variables?.files ?? []).map((file, index) => (
-                  <li key={`uploading-${index}`} className="overflow-hidden rounded-[12px] border border-border bg-background" aria-label={`Uploading ${file.name}`} data-testid="uploading">
-                    <ImageLoader aspect={4 / 3} gridSize={10} cellGap={3} />
-                    <p className="truncate p-2.5 text-xs text-muted-foreground">Uploading {file.name}…</p>
-                  </li>
-                ))
-              : null}
+            {/* One array, so a card keeps its place in the tree when an upload becomes the saved file. Two arrays would remount it. */}
+            {[
+              ...saved.map(({ key, item }) => <AttachmentCard key={key} attachment={item} canDelete={item.uploaded_by === user.id || isAdmin} onDelete={() => remove.mutate(item.id)} />),
+              ...uploading.map((entry) => <AttachmentCard key={entry.key} attachment={pendingAttachment(entry)} canDelete={false} onDelete={() => {}} pending />),
+            ]}
           </ul>
         ) : null}
         {canUpload ? (
