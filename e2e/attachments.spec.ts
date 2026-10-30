@@ -32,8 +32,19 @@ test("an upload is one tile from the first blink to the reveal, with no vanish a
   await expect(tile.locator("[data-phase]")).toHaveAttribute("data-phase", "done", { timeout: 15_000 });
   await expect(tile).toHaveAttribute("data-mark", "same-node");
 
+  // Reopen the task: the file is saved now, so it lazy-loads behind a shimmer. The square reveal is only for a fresh upload.
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await openTask(page.getByTestId("task-row").first());
+  const saved = page.getByTestId("task-drawer").getByTestId("team-attachments").getByTestId("attachment").filter({ hasText: name });
+  await expect(saved).toBeVisible();
+  await expect(saved.locator("[data-phase]")).toHaveCount(0);
+  await expect(saved.locator("[data-state]")).toHaveCount(1);
+  await expect(saved.locator("[data-state]")).toHaveAttribute("data-state", "loaded", { timeout: 15_000 });
+  await expect(saved.locator("[data-phase]")).toHaveCount(0);
+
   // Leave the task as we found it.
-  await tile.hover();
-  await tile.getByRole("button", { name: `Remove ${name}` }).click();
-  await expect(team.getByTestId("attachment").filter({ hasText: name })).toHaveCount(0);
+  await saved.hover();
+  await saved.getByRole("button", { name: `Remove ${name}` }).click();
+  await expect(page.getByTestId("task-drawer").getByTestId("team-attachments").getByTestId("attachment").filter({ hasText: name })).toHaveCount(0);
 });

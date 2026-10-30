@@ -2,6 +2,7 @@
 
 import { ImageOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type Cell = { id: string; x: number; y: number; blinkDelay: number; fadeDelay: number; opacity: number };
@@ -178,6 +179,45 @@ export function ImageLoader({
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Picture that was already saved: a shimmer placeholder while it lazy-loads, then it fades in. The square-by-square reveal
+ * above is kept for something the person just uploaded, so opening a task does not replay it for every old image.
+ */
+export function LazyImage({ src, alt = "", aspect = 4 / 3, className }: { src?: string | null; alt?: string; aspect?: number; className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // A cached picture can finish before React attaches onLoad.
+  const attach = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalWidth > 0) setLoaded(true);
+  }, []);
+
+  return (
+    <div className={cn("relative w-full overflow-hidden bg-secondary", className)} style={{ aspectRatio: aspect }} data-state={failed ? "failed" : loaded ? "loaded" : "loading"}>
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element -- short-lived signed storage links of unknown size
+        <img
+          ref={attach}
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className="absolute inset-0 size-full object-cover transition-opacity duration-300"
+          style={{ opacity: loaded ? 1 : 0 }}
+        />
+      ) : null}
+      {failed ? (
+        <span className="absolute inset-0 grid place-items-center text-muted-foreground">
+          <ImageOff className="size-5" aria-label="Could not load the picture" />
+        </span>
+      ) : (
+        <Skeleton aria-hidden className={cn("absolute inset-0 rounded-none transition-opacity duration-300", loaded && "animate-none opacity-0")} />
+      )}
     </div>
   );
 }

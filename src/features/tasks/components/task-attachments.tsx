@@ -5,7 +5,7 @@ import { Download, FileText, Paperclip, Trash2, UploadCloud } from "lucide-react
 import { useRef, useState } from "react";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
-import { ImageLoader } from "@/components/ui/image-loading";
+import { ImageLoader, LazyImage } from "@/components/ui/image-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tip } from "@/components/ui/tip";
 import { can } from "@/lib/auth/roles";
@@ -74,8 +74,8 @@ function Caption({ attachment, pending }: { attachment: Attachment; pending?: bo
   );
 }
 
-/** Pictures show as tiles that reveal themselves; other files are a plain row. */
-function AttachmentCard({ attachment, canDelete, onDelete, pending = false }: { attachment: Attachment; canDelete: boolean; onDelete: () => void; pending?: boolean }) {
+/** Pictures show as tiles: squares that reveal themselves for a fresh upload, a shimmer for saved ones. Other files are a plain row. */
+function AttachmentCard({ attachment, canDelete, onDelete, pending = false, fresh = false }: { attachment: Attachment; canDelete: boolean; onDelete: () => void; pending?: boolean; fresh?: boolean }) {
   const { data: queried } = useAttachmentUrl(attachment, !pending);
   const url = pending ? undefined : queried;
   if (isImage(attachment)) {
@@ -83,7 +83,8 @@ function AttachmentCard({ attachment, canDelete, onDelete, pending = false }: { 
       <li className="group/file overflow-hidden rounded-[12px] border border-border bg-background transition-colors duration-75 hover:border-ash" data-testid="attachment" data-pending={pending || undefined}>
         <div className="relative">
           <a href={url ?? undefined} target="_blank" rel="noreferrer" aria-label={pending ? `Uploading ${attachment.file_name}` : `Open ${attachment.file_name}`} className="block">
-            <ImageLoader src={url} alt={attachment.file_name} aspect={4 / 3} gridSize={10} cellGap={3} />
+            {/* Squares for a file just uploaded (it keeps them through the reveal); a shimmer for one that was already saved. */}
+            {pending || fresh ? <ImageLoader src={url} alt={attachment.file_name} aspect={4 / 3} gridSize={10} cellGap={3} /> : <LazyImage src={url} alt={attachment.file_name} aspect={4 / 3} />}
           </a>
           {pending ? null : (
             <div className="absolute top-2 right-2 z-20 opacity-0 transition-opacity duration-75 group-focus-within/file:opacity-100 group-hover/file:opacity-100">
@@ -121,6 +122,8 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [pending, setPending] = useState<PendingUpload[]>([]);
+  // Keys uploaded in this session. They keep the square reveal after the upload finishes; everything else lazy-loads with a shimmer.
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
   const canUpload = can(user.role, "comments.create");
   const isAdmin = user.role === "super_admin" || user.role === "project_manager";
 
@@ -156,6 +159,7 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
       return { key: uploadKey(file.name, file.size, nth), file, startedAt: new Date().toISOString() };
     });
     setPending((current) => [...current, ...batch]);
+    setFresh((current) => new Set([...current, ...batch.map((entry) => entry.key)]));
     // Once settled the saved files are in the list. Drop whatever is left (uploads that failed).
     upload.mutate({ files: list, userId: user.id }, { onSettled: () => setPending((current) => current.filter((entry) => !batch.some((b) => b.key === entry.key))) });
   }
@@ -210,7 +214,7 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {/* One array, so a card keeps its place in the tree when an upload becomes the saved file. Two arrays would remount it. */}
             {[
-              ...saved.map(({ key, item }) => <AttachmentCard key={key} attachment={item} canDelete={item.uploaded_by === user.id || isAdmin} onDelete={() => remove.mutate(item.id)} />),
+              ...saved.map(({ key, item }) => <AttachmentCard key={key} attachment={item} canDelete={item.uploaded_by === user.id || isAdmin} onDelete={() => remove.mutate(item.id)} fresh={fresh.has(key)} />),
               ...uploading.map((entry) => <AttachmentCard key={entry.key} attachment={pendingAttachment(entry)} canDelete={false} onDelete={() => {}} pending />),
             ]}
           </ul>
