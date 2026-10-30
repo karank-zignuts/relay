@@ -42,6 +42,7 @@ export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
   const [pageSize, setPageSizeRaw] = usePersisted<number>("relay.page-size", 50);
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [threadsOpen, setThreadsOpen] = usePersisted<boolean>("relay.threads-open", false);
   const [boardTotal, setBoardTotal] = useState<number | null>(null);
   // The header is compact by default so the work area gets the screen. The arrow next to the title opens the filters.
   const [expanded, setExpanded] = usePersisted<boolean>("relay.filters-open", false);
@@ -78,7 +79,7 @@ export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
 
   const teamQuery = useTeam();
   const countsQuery = useTaskCounts();
-  const args = useMemo(() => toRpcArgs(applied, sort, { limit: pageSize, offset: page * pageSize }), [applied, sort, pageSize, page]);
+  const args = useMemo(() => toRpcArgs(applied, sort, { limit: pageSize, offset: page * pageSize }, { group: true }), [applied, sort, pageSize, page]);
   const pageQuery = useTaskPage(args, view === "table");
   const openQuery = useTask(openId);
 
@@ -178,6 +179,8 @@ export function TasksWorkspace({ children }: { children?: React.ReactNode }) {
               onOpen={(task) => setOpenId(task.id)}
               activeId={openId}
               fetching={pageQuery.isFetching}
+              threadsOpen={threadsOpen}
+              onThreadsOpen={setThreadsOpen}
             />
           )
         ) : teamQuery.isPending ? (

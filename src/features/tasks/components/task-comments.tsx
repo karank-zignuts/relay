@@ -1,11 +1,13 @@
 "use client";
 
-import { Check, CheckCheck, MessageSquareText, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
+import type { Editor } from "@tiptap/react";
+import { Check, CheckCheck, MessageSquareText, Pencil, SendHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { RichEditor } from "@/components/ui/rich-editor";
+import { RichText, toSafeHtml } from "@/components/ui/rich-text";
 import { Tip } from "@/components/ui/tip";
 import { can } from "@/lib/auth/roles";
 import { formatDateTime, formatRelative, initials } from "@/lib/format";
@@ -39,14 +41,14 @@ function CommentItem({ comment, reads, names, taskId }: { comment: Comment; read
   const edit = useEditComment(taskId);
   const remove = useDeleteComment(taskId);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(comment.body);
+  const draft = useRef<{ html: string; empty: boolean }>({ html: comment.body, empty: false });
   const pending = comment.id.startsWith("pending-");
   const name = comment.author?.full_name || comment.author?.email || "Former member";
   const mine = comment.author_id === user.id;
 
   function save() {
-    const body = draft.trim();
-    if (body && body !== comment.body) edit.mutate({ id: comment.id, body });
+    const { html, empty } = draft.current;
+    if (!empty && html !== comment.body) edit.mutate({ id: comment.id, body: html });
     setEditing(false);
   }
 
@@ -73,7 +75,7 @@ function CommentItem({ comment, reads, names, taskId }: { comment: Comment; read
                     aria-label="Edit comment"
                     className="grid size-6 place-items-center rounded-full text-ash transition-colors hover:bg-secondary hover:text-foreground"
                     onClick={() => {
-                      setDraft(comment.body);
+                      draft.current = { html: toSafeHtml(comment.body), empty: false };
                       setEditing(true);
                     }}
                   >
@@ -92,33 +94,27 @@ function CommentItem({ comment, reads, names, taskId }: { comment: Comment; read
           ) : null}
         </p>
         {editing ? (
-          <div className="mt-1.5 space-y-2">
-            <Textarea
-              autoFocus
-              aria-label="Edit comment"
-              value={draft}
-              rows={2}
-              className="rounded-[12px]"
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setEditing(false);
-                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                  event.preventDefault();
-                  save();
-                }
-              }}
-            />
-            <div className="flex gap-1.5">
-              <Button size="xs" onClick={save} disabled={!draft.trim()}>
-                Save
-              </Button>
-              <Button size="xs" variant="ghost" onClick={() => setEditing(false)}>
-                <X /> Cancel
-              </Button>
-            </div>
-          </div>
+          <RichEditor
+            autoFocus
+            ariaLabel="Edit comment"
+            className="mt-1.5"
+            initialHtml={toSafeHtml(comment.body)}
+            onChange={(state) => (draft.current = state)}
+            onSubmit={save}
+            onCancel={() => setEditing(false)}
+            actions={
+              <>
+                <Button size="xs" variant="ghost" onClick={() => setEditing(false)}>
+                  Cancel
+                </Button>
+                <Button size="xs" onClick={save}>
+                  Save
+                </Button>
+              </>
+            }
+          />
         ) : (
-          <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">{comment.body}</p>
+          <RichText body={comment.body} className="mt-1" />
         )}
         {mine && !pending && !editing ? <div className="mt-1"><SeenBy reads={reads} names={names} /></div> : null}
       </div>
@@ -133,7 +129,8 @@ export function TaskComments({ taskId }: { taskId: string }) {
   const { data: team } = useTeam();
   const add = useAddComment(taskId);
   const markRead = useMarkCommentsRead(taskId);
-  const [body, setBody] = useState("");
+  const [empty, setEmpty] = useState(true);
+  const editorRef = useRef<Editor | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const names = useMemo(() => new Map((team ?? []).map((member) => [member.id, member.full_name || member.email])), [team]);
 
@@ -155,9 +152,11 @@ export function TaskComments({ taskId }: { taskId: string }) {
   }, [unread, markingRead, sendRead]);
 
   function send() {
-    if (!body.trim() || !can(user.role, "comments.create")) return;
-    add.mutate({ authorId: user.id, body, author: { id: user.id, full_name: user.fullName, email: user.email } });
-    setBody(""); // clear at once; the comment is already showing
+    const editor = editorRef.current;
+    if (!editor || editor.isEmpty || !can(user.role, "comments.create")) return;
+    add.mutate({ authorId: user.id, body: editor.getHTML(), author: { id: user.id, full_name: user.fullName, email: user.email } });
+    editor.commands.clearContent(true); // clear at once; the comment is already showing
+    setEmpty(true);
   }
 
   const readsByComment = (id: string) => (reads ?? []).filter((read) => read.comment_id === id && read.user_id !== user.id);
@@ -197,30 +196,26 @@ export function TaskComments({ taskId }: { taskId: string }) {
         {comments?.map((comment) => <CommentItem key={comment.id} comment={comment} reads={readsByComment(comment.id)} names={names} taskId={taskId} />)}
       </div>
 
-      <div className="rounded-[12px] border border-input bg-background transition-[border-color,box-shadow] duration-75 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
-        <Textarea
-          aria-label="Write a comment"
-          placeholder="Write a comment…"
-          value={body}
-          rows={2}
-          className="min-h-[64px] resize-none rounded-[12px] border-0 bg-transparent shadow-none ring-0 hover:border-0 focus-visible:border-0 focus-visible:ring-0"
-          onChange={(event) => setBody(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              send();
-            }
-          }}
-        />
-        <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
-          <p className="text-[11px] text-muted-foreground">
-            <kbd className="font-mono">⌘</kbd> <kbd className="font-mono">Enter</kbd> to send
-          </p>
-          <Button size="sm" onClick={send} disabled={!body.trim()} aria-label="Send comment">
-            Send <SendHorizontal />
-          </Button>
-        </div>
-      </div>
+      <RichEditor
+        ariaLabel="Write a comment"
+        placeholder="Write a comment…"
+        onEditor={(editor) => (editorRef.current = editor)}
+        onChange={({ empty: next }) => setEmpty(next)}
+        onSubmit={send}
+        actions={
+          <Tip label="Send" shortcut="⌘↵">
+            <button
+              type="button"
+              onClick={send}
+              disabled={empty}
+              aria-label="Send comment"
+              className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground transition-[background-color,opacity,transform] duration-75 hover:bg-graphite active:scale-95 disabled:bg-stone disabled:text-ash"
+            >
+              <SendHorizontal className="size-4" />
+            </button>
+          </Tip>
+        }
+      />
     </section>
   );
 }

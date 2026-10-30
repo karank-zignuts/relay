@@ -81,7 +81,7 @@ function findCachedTask(queryClient: QueryClient, id: string): Task | undefined 
   for (const [key, data] of queryClient.getQueriesData({ queryKey: taskKeys.all })) {
     if (!isTaskList(key)) continue;
     if (isPageData(data)) {
-      const found = data.rows.find((task) => task.id === id);
+      const found = data.rows.flatMap((task) => [task, ...(task.children ?? [])]).find((task) => task.id === id);
       if (found) return found;
     } else if (isInfinite(data)) {
       for (const page of data.pages) {
@@ -99,7 +99,8 @@ function findCachedTask(queryClient: QueryClient, id: string): Task | undefined 
 function mapPage(page: TaskPage, fn: (task: Task) => Task | null): TaskPage {
   const rows = page.rows.flatMap((task) => {
     const next = fn(task);
-    return next ? [next] : [];
+    if (!next) return [];
+    return [next.children?.length ? { ...next, children: next.children.flatMap((child) => fn(child) ?? []) } : next];
   });
   return { ...page, rows, total: Math.max(0, page.total - (page.rows.length - rows.length)) };
 }

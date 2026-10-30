@@ -99,7 +99,7 @@ test("the panel has select fields for module and tags, attachments and a send bu
   await team.getByRole("button", { name: "Remove e2e-note.txt" }).click({ force: true });
   await expect(team.getByTestId("attachment")).toHaveCount(0);
 
-  await expect(drawer.getByRole("button", { name: "Send comment" })).toContainText("Send");
+  await expect(drawer.getByRole("button", { name: "Send comment" })).toHaveText(""); // icon only
 });
 
 test("a comment can be edited and shows who has seen it", async ({ page, browser, baseURL }) => {
@@ -188,7 +188,7 @@ test("clickable things show a pointer, and tooltips explain icons", async ({ pag
   expect(await cursor(page.getByRole("option", { name: "Done" }))).toBe("pointer");
 });
 
-test("dragging the panel edge past the close line closes it while still dragging", async ({ page }) => {
+test("pulling the panel edge shows a warning first, then closes", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 800 });
   await page.goto("/tasks");
   await openTask(page.getByTestId("task-row").first());
@@ -200,7 +200,63 @@ test("dragging the panel edge past the close line closes it while still dragging
   const y = handle.y + handle.height / 2;
   await page.mouse.move(handle.x + handle.width / 2, y);
   await page.mouse.down();
-  await page.mouse.move(1440 - 120, y, { steps: 12 }); // still holding the button
+  await page.mouse.move(1440 - 300, y, { steps: 10 }); // past the minimum width, not far enough to close by itself
+  await expect(page.getByText("Release to close")).toHaveCSS("opacity", "1");
+  await expect(panel).toBeVisible();
+  await page.mouse.move(1440 - 400, y, { steps: 4 }); // back inside: the warning goes away
+  await expect(page.getByText("Release to close")).toHaveCSS("opacity", "0");
+  await page.mouse.move(1440 - 300, y, { steps: 4 });
+  await page.mouse.up(); // released while armed
+  await expect(panel).toBeHidden({ timeout: 3_000 });
+});
+
+test("a long pull closes the panel without releasing", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await page.goto("/tasks");
+  await openTask(page.getByTestId("task-row").first());
+  const panel = page.getByTestId("task-drawer");
+  await panel.waitFor();
+  await page.waitForTimeout(300);
+  const handle = (await page.getByTestId("drawer-resize").boundingBox())!;
+  const y = handle.y + handle.height / 2;
+  await page.mouse.move(handle.x + handle.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(1440 - 100, y, { steps: 14 });
   await expect(panel).toBeHidden({ timeout: 3_000 });
   await page.mouse.up();
+});
+
+test("sub-tasks group under their parent and can be shown directly", async ({ page }) => {
+  const { supabase, userId } = await clientAs("super_admin");
+  const { data: parent } = await supabase.from("tasks").insert({ title: `E2E task ${id} parent`, created_by: userId }).select("id").single();
+  await supabase.from("tasks").insert({ title: `E2E task ${id} child`, parent_task_id: parent!.id, created_by: userId });
+
+  await page.goto("/tasks");
+  await page.getByLabel("Search tasks").fill(`E2E task ${id}`);
+  const parentRow = page.getByTestId("task-row").filter({ hasText: "parent" });
+  await expect(parentRow).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByTestId("task-row-child")).toHaveCount(0); // collapsed by default
+  await parentRow.getByTestId("thread-toggle").click();
+  await expect(page.getByTestId("task-row-child")).toContainText("child");
+  await expect(page.getByTestId("task-row-child").getByText(/^#\d+ E2E task/)).toHaveCount(0); // no arrow label on children
+  await parentRow.getByTestId("thread-toggle").click();
+  await expect(page.getByTestId("task-row-child")).toHaveCount(0);
+
+  await page.getByTestId("threads-toggle").click(); // show threads directly
+  await expect(page.getByTestId("task-row-child")).toContainText("child");
+  await page.getByTestId("threads-toggle").click(); // back to the default for other tests
+});
+
+test("comments take formatting", async ({ page }) => {
+  await page.goto("/tasks");
+  await page.getByLabel("Search tasks").fill(`E2E task ${id}`);
+  await openTask(page.getByTestId("task-row").filter({ hasText: "before" }).or(page.getByTestId("task-row").filter({ hasText: "after" })).first());
+  const drawer = page.getByTestId("task-drawer");
+  const editor = drawer.getByLabel("Write a comment");
+  await editor.click();
+  await page.keyboard.type("make this bold");
+  await page.keyboard.press("ControlOrMeta+a");
+  await drawer.getByRole("button", { name: "Bold" }).click();
+  await drawer.getByRole("button", { name: "Send comment" }).click();
+  await expect(drawer.getByTestId("comment").filter({ hasText: "make this bold" }).locator("strong")).toHaveText("make this bold");
 });

@@ -61,7 +61,7 @@ export function toRpcArgs(
   filters: TaskFilters,
   sort: SortState,
   paging: { limit: number; offset: number },
-  options: { manualOrder?: boolean; status?: TaskStatus[] } = {},
+  options: { manualOrder?: boolean; status?: TaskStatus[]; group?: boolean } = {},
 ) {
   const from = filters.from ? new Date(`${filters.from}T00:00:00`).toISOString() : null;
   const to = filters.to ? new Date(`${filters.to}T23:59:59.999`).toISOString() : null;
@@ -84,5 +84,6 @@ export function toRpcArgs(
     p_dir: sort ? sort.direction : options.manualOrder ? "asc" : "desc",
     p_limit: paging.limit,
     p_offset: paging.offset,
+    p_group: options.group ?? false,
   };
 }

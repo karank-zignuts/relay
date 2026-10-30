@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Columns3, CornerDownRight, ExternalLink, MessageSquare, MoreHorizontal, Paperclip, Pencil, Rows3, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Columns3, CornerDownRight, ExternalLink, MessageSquare, MoreHorizontal, Paperclip, Pencil, Rows3, Trash2 } from "lucide-react";
+import { Fragment, useState } from "react";
 import { useSession } from "@/components/session-provider";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -93,21 +93,73 @@ type TaskTableProps = {
   onOpen: (task: Task) => void;
   activeId: string | null;
   fetching?: boolean;
+  /** Show every parent thread open (true) or collapsed until clicked (false). */
+  threadsOpen: boolean;
+  onThreadsOpen: (open: boolean) => void;
 };
 
-export function TaskTable({ tasks, total, team, members, sort, onSort, page, pageSize, onPage, onPageSize, onOpen, activeId, fetching = false }: TaskTableProps) {
+export function TaskTable({ tasks, total, team, members, sort, onSort, page, pageSize, onPage, onPageSize, onOpen, activeId, fetching = false, threadsOpen, onThreadsOpen }: TaskTableProps) {
   const user = useSession();
   const { hidden, setHidden, compact, setCompact, visible } = useColumns();
   const [deleting, setDeleting] = useState<Task | null>(null);
   const deleteTask = useDeleteTask();
+  // Parents the person flipped by hand, relative to the default. A new default clears them.
+  const [flipped, setFlipped] = useState<{ mode: boolean; ids: string[] }>({ mode: threadsOpen, ids: [] });
+  const flippedIds = flipped.mode === threadsOpen ? flipped.ids : [];
+  const isOpen = (id: string) => threadsOpen !== flippedIds.includes(id);
+  const flip = (id: string) => setFlipped({ mode: threadsOpen, ids: flippedIds.includes(id) ? flippedIds.filter((item) => item !== id) : [...flippedIds, id] });
 
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const canDelete = can(user.role, "tasks.delete");
   const toggleColumn = (id: string) => setHidden(hidden.includes(id) ? hidden.filter((item) => item !== id) : [...hidden, id]);
 
+  const renderRow = (task: Task, depth: number, thread?: { kids: number; open: boolean; onToggle: () => void }) => (
+                <TableRow
+                  key={task.id}
+                  data-testid={depth ? "task-row-child" : "task-row"}
+                  tabIndex={0}
+                  onClick={() => onOpen(task)}
+                  onKeyDown={(event) => {
+                    if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      onOpen(task);
+                    }
+                  }}
+                  className={cn("group cursor-pointer outline-none transition-colors duration-75 focus-visible:bg-secondary focus-visible:shadow-[inset_2px_0_0_var(--foreground)]", activeId === task.id && "bg-secondary", depth > 0 && "bg-secondary/50 shadow-[inset_3px_0_0_var(--stone)] animate-row-in", task.id.startsWith("pending-") && "opacity-60")}
+                >
+                  {visible.map((column) => (
+                    <TableCell key={column.id} className={cn("align-middle", column.id === "title" && "whitespace-normal")}>
+                      {renderCell(column.id, task, team, members, depth, thread)}
+                    </TableCell>
+                  ))}
+                  <TableCell className="align-middle" onClick={(event) => event.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 data-popup-open:opacity-100" aria-label={`Actions for task ${task.task_number}`} />}>
+                        <MoreHorizontal />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-40">
+                        <DropdownMenuItem onClick={() => onOpen(task)}>
+                          <Pencil /> Open / edit
+                        </DropdownMenuItem>
+                        {canDelete ? (
+                          <DropdownMenuItem onClick={() => setDeleting(task)}>
+                            <Trash2 /> Delete
+                          </DropdownMenuItem>
+                        ) : null}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex shrink-0 items-center justify-end gap-2">
+        <Tip label={threadsOpen ? "Collapse every thread. Click a parent to open it." : "Show sub-tasks directly under their parent"}>
+          <Button variant="ghost" size="sm" aria-pressed={threadsOpen} onClick={() => onThreadsOpen(!threadsOpen)} data-testid="threads-toggle">
+            {threadsOpen ? <ChevronsDownUp /> : <ChevronsUpDown />} {threadsOpen ? "Threads open" : "Threads collapsed"}
+          </Button>
+        </Tip>
         <Tip label={compact ? "Switch to roomier rows" : "Fit more rows on screen"}>
           <Button variant="ghost" size="sm" aria-pressed={compact} onClick={() => setCompact(!compact)}>
             <Rows3 /> {compact ? "Compact" : "Comfortable"}
@@ -168,44 +220,16 @@ export function TaskTable({ tasks, total, team, members, sort, onSort, page, pag
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tasks.map((task) => (
-                <TableRow
-                  key={task.id}
-                  data-testid="task-row"
-                  tabIndex={0}
-                  onClick={() => onOpen(task)}
-                  onKeyDown={(event) => {
-                    if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
-                      event.preventDefault();
-                      onOpen(task);
-                    }
-                  }}
-                  className={cn("group cursor-pointer outline-none transition-colors duration-75 focus-visible:bg-secondary focus-visible:shadow-[inset_2px_0_0_var(--foreground)]", activeId === task.id && "bg-secondary", task.id.startsWith("pending-") && "opacity-60")}
-                >
-                  {visible.map((column) => (
-                    <TableCell key={column.id} className={cn("align-middle", column.id === "title" && "whitespace-normal")}>
-                      {renderCell(column.id, task, team, members)}
-                    </TableCell>
-                  ))}
-                  <TableCell className="align-middle" onClick={(event) => event.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 data-popup-open:opacity-100" aria-label={`Actions for task ${task.task_number}`} />}>
-                        <MoreHorizontal />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-40">
-                        <DropdownMenuItem onClick={() => onOpen(task)}>
-                          <Pencil /> Open / edit
-                        </DropdownMenuItem>
-                        {canDelete ? (
-                          <DropdownMenuItem onClick={() => setDeleting(task)}>
-                            <Trash2 /> Delete
-                          </DropdownMenuItem>
-                        ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {tasks.map((task) => {
+                const kids = task.children ?? [];
+                const open = kids.length > 0 && isOpen(task.id);
+                return (
+                  <Fragment key={task.id}>
+                    {renderRow(task, 0, { kids: kids.length, open, onToggle: () => flip(task.id) })}
+                    {open ? kids.map((child) => renderRow(child, 1)) : null}
+                  </Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -266,14 +290,35 @@ export function TaskTable({ tasks, total, team, members, sort, onSort, page, pag
 
 const dash = <span className="text-muted-foreground">—</span>;
 
-function renderCell(id: string, task: Task, team: Map<string, TeamMember>, members: TeamMember[]) {
+function renderCell(id: string, task: Task, team: Map<string, TeamMember>, members: TeamMember[], depth: number, thread?: { kids: number; open: boolean; onToggle: () => void }) {
   switch (id) {
     case "number":
       return <span className="font-mono text-xs text-muted-foreground tabular-nums">{task.task_number > 0 ? `#${task.task_number}` : "…"}</span>;
     case "title":
       return (
+        <div className={cn("flex min-w-0 items-start gap-1.5", depth > 0 && "pl-6")}>
+          {thread && thread.kids > 0 ? (
+            <Tip label={thread.open ? "Hide sub-tasks" : `Show ${thread.kids} sub-task${thread.kids === 1 ? "" : "s"}`}>
+              <button
+                type="button"
+                aria-expanded={thread.open}
+                aria-label={`${thread.open ? "Hide" : "Show"} ${thread.kids} sub-task${thread.kids === 1 ? "" : "s"}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  thread.onToggle();
+                }}
+                data-testid="thread-toggle"
+                className={cn("-ml-1.5 mt-px grid h-6 shrink-0 place-items-center gap-0.5 rounded-full px-1.5 transition-colors duration-75 hover:bg-stone", thread.open ? "bg-secondary text-foreground" : "text-muted-foreground")}
+              >
+                <span className="flex items-center gap-0.5 text-[11px] tabular-nums">
+                  <ChevronRight className={cn("size-3.5 transition-transform duration-150 ease-out-quint", thread.open && "rotate-90")} />
+                  {thread.kids}
+                </span>
+              </button>
+            </Tip>
+          ) : null}
         <div className="min-w-0">
-          {task.parent ? (
+          {task.parent && depth === 0 ? (
             <p className="mb-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               <CornerDownRight className="size-3" aria-hidden />
               <span className="truncate">
@@ -294,6 +339,7 @@ function renderCell(id: string, task: Task, team: Map<string, TeamMember>, membe
               <TagList tags={task.tags} />
             </div>
           ) : null}
+        </div>
         </div>
       );
     case "description":

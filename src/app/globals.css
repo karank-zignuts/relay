@@ -233,3 +233,61 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Rich text (comments): the editor and the rendered comment share these rules. */
+.rich-text > * + * {
+  margin-top: 0.4rem;
+}
+.rich-text p {
+  min-height: 1.4em;
+  overflow-wrap: anywhere;
+}
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.25rem;
+}
+.rich-text ul {
+  list-style: disc;
+}
+.rich-text ol {
+  list-style: decimal;
+}
+.rich-text li > p {
+  margin: 0;
+}
+.rich-text strong {
+  font-weight: 600;
+}
+.rich-text a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ash);
+  transition: text-decoration-color 75ms;
+}
+.rich-text a:hover {
+  text-decoration-color: currentColor;
+}
+.rich-text code {
+  border-radius: 6px;
+  background: var(--stone);
+  padding: 0.1rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.rich-text p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
+
+@keyframes grid-blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}

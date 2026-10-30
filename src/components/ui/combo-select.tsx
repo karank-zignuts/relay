@@ -153,7 +153,7 @@ export function ComboSelect(props: Single | Multiple) {
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <input
-              autoFocus
+              ref={(node) => node?.focus({ preventScroll: true })}
               aria-label={searchPlaceholder}
               placeholder={searchPlaceholder}
               value={query}

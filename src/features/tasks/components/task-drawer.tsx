@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -73,7 +73,6 @@ function TogglePill({ checked, onChange, disabled, children }: { checked: boolea
       )}
     >
       <input type="checkbox" className="sr-only" checked={checked} disabled={disabled} onChange={onChange} />
-      {checked ? <Check className="size-3.5" aria-hidden /> : null}
       {children}
     </label>
   );
@@ -94,8 +93,12 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 const DRAWER_DEFAULT = 600;
 const DRAWER_MIN = 420;
 const DRAWER_WIDE = 880;
-/** Dragging the edge further right than this closes the panel on the spot, without waiting for release. */
-const DRAWER_CLOSE_BELOW = 360;
+/**
+ * Closing by dragging is deliberate. The panel stops at its minimum width; pulling further past it shows resistance,
+ * and once the pull passes ARM the handle turns Ember and says "Release to close". A long pull closes it at once.
+ */
+const PULL_ARM = 56;
+const PULL_FORCE = 240;
 
 const maxWidth = () => Math.round(Math.min(1100, window.innerWidth * 0.92));
 const clampWidth = (width: number) => Math.round(Math.min(Math.max(width, DRAWER_MIN), maxWidth()));
@@ -105,6 +108,8 @@ export function TaskDrawer({ task, team, onClose }: { task: Task | null; team: T
   const [live, setLive] = useState<number | null>(null); // width while dragging, so we save once on release
   // While the panel slides away after a drag-close it keeps the width it had, so it does not jump back to full size.
   const [frozen, setFrozen] = useState<number | null>(null);
+  const [pull, setPull] = useState(0); // how far past the minimum width the pointer is
+  const armed = pull >= PULL_ARM;
   const dragging = useRef(false);
   const shown = frozen ?? live ?? width;
 
@@ -114,35 +119,44 @@ export function TaskDrawer({ task, team, onClose }: { task: Task | null; team: T
     setLive(width);
   }
 
+  function closeNow(event: React.PointerEvent<HTMLDivElement>) {
+    dragging.current = false;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setFrozen(DRAWER_MIN);
+    setLive(null);
+    setPull(0);
+    onClose();
+  }
+
   function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return;
     const raw = window.innerWidth - event.clientX;
-    if (raw < DRAWER_CLOSE_BELOW) {
-      // Past the edge: close now, mid-drag.
-      dragging.current = false;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      setFrozen(Math.max(raw, DRAWER_MIN));
-      setLive(null);
-      onClose();
+    if (raw >= DRAWER_MIN) {
+      setPull(0);
+      setLive(Math.min(raw, maxWidth()));
       return;
     }
-    // Follow the pointer freely down to the close line; the minimum width is only applied when saving.
-    setLive(Math.min(raw, maxWidth()));
+    const next = DRAWER_MIN - raw;
+    if (next >= PULL_FORCE) return closeNow(event);
+    setLive(DRAWER_MIN);
+    setPull(next);
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return;
+    if (armed) return closeNow(event);
     dragging.current = false;
     event.currentTarget.releasePointerCapture(event.pointerId);
     const final = live === null ? width : clampWidth(live);
     setLive(null);
+    setPull(0);
     setWidth(final);
   }
 
   return (
     <Sheet open={Boolean(task)} onOpenChange={(open) => !open && onClose()} onOpenChangeComplete={(open) => !open && setFrozen(null)}>
       <SheetContent
-        style={{ width: shown, maxWidth: "100vw" }}
+        style={{ width: shown, maxWidth: "100vw", transform: pull > 0 ? `translateX(${Math.round(pull * 0.4)}px)` : undefined }}
         className={cn("gap-0 p-0 data-[side=right]:sm:max-w-none", live !== null && "select-none transition-none")}
         data-testid="task-drawer"
       >
@@ -166,10 +180,26 @@ export function TaskDrawer({ task, team, onClose }: { task: Task | null; team: T
             }}
             className="group/resize absolute inset-y-0 -left-2 z-30 flex w-4 touch-none items-stretch justify-center outline-none"
           >
-            <span className={cn("w-0.5 rounded-full bg-transparent transition-[background-color,width] duration-100 group-hover/resize:w-[3px] group-hover/resize:bg-foreground/70 group-focus-visible/resize:bg-foreground/70", live !== null && "w-[3px] bg-foreground")} />
+            <span
+              className={cn(
+                "w-0.5 rounded-full bg-transparent transition-[background-color,width] duration-100 group-hover/resize:w-[3px] group-hover/resize:bg-foreground/70 group-focus-visible/resize:bg-foreground/70",
+                live !== null && "w-[3px] bg-foreground",
+                pull > 0 && !armed && "w-[3px] bg-ember/50",
+                armed && "w-1 bg-ember",
+              )}
+            />
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute top-1/2 right-[calc(100%+4px)] -translate-y-1/2 rounded-full bg-ember px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-[0_4px_16px_rgba(0,0,0,0.16)] transition-[opacity,transform] duration-100",
+                armed ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0",
+              )}
+            >
+              Release to close
+            </span>
           </div>
         </Tip>
-        <div className="h-full overflow-y-auto overflow-x-hidden">{task ? <DrawerBody key={task.id} task={task} team={team} onClose={onClose} /> : null}</div>
+        <div className="h-full overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]" style={pull > 0 ? { opacity: 1 - Math.min(pull / PULL_FORCE, 1) * 0.55 } : undefined}>{task ? <DrawerBody key={task.id} task={task} team={team} onClose={onClose} /> : null}</div>
       </SheetContent>
     </Sheet>
   );

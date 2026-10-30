@@ -647,6 +647,7 @@ export type Database = {
           p_dir?: string
           p_envs?: Database["public"]["Enums"]["task_env"][]
           p_from?: string
+          p_group?: boolean
           p_hide_done?: boolean
           p_jira?: string
           p_level?: string
@@ -677,6 +678,7 @@ export type Database = {
         Args: { p_actor: string; p_api_key_id: string; p_items: Json }
         Returns: Json
       }
+      task_row_json: { Args: { p_id: string }; Returns: Json }
     }
     Enums: {
       attachment_source: "client" | "team"

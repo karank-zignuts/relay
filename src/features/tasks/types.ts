@@ -12,6 +12,8 @@ export type Task = TaskRecord & {
   parent: { id: string; task_number: number; title: string } | null;
   task_comments: { count: number }[];
   task_attachments?: { count: number }[];
+  /** Sub-tasks, present on top-level rows when the list is grouped by thread. */
+  children?: Task[];
 };
 
 /** One page of the server-side task list, with the counts the header shows. */
