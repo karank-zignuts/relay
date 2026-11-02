@@ -91,7 +91,7 @@ export function AppNav({ attentionCount }: { attentionCount: number }) {
             </DropdownMenuSub>
             <DropdownMenuSeparator />
             <form action={signOut}>
-              <DropdownMenuItem render={<button type="submit" className="w-full" />}>
+              <DropdownMenuItem nativeButton render={<button type="submit" className="w-full" />}>
                 <LogOut /> Sign out
               </DropdownMenuItem>
             </form>
