@@ -98,7 +98,7 @@ export function UsersTable({ users, actorId, actorRole }: { users: ManagedUser[]
                   <TableCell className="font-mono text-xs">{user.slackUserId ?? "—"}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5 text-sm">
-                      <span className={`size-2 rounded-full ${user.status === "active" ? "bg-foreground" : user.status === "invited" ? "bg-transparent ring-[1.5px] ring-inset ring-muted-foreground" : "bg-ash"}`} aria-hidden />
+                      <span className={`size-2 rounded-full ${user.status === "active" ? "bg-amber-500" : user.status === "invited" ? "bg-transparent ring-[1.5px] ring-inset ring-muted-foreground" : "bg-ash"}`} aria-hidden />
                       {STATUS_LABEL[user.status]}
                     </span>
                   </TableCell>

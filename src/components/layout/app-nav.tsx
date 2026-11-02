@@ -1,16 +1,17 @@
 "use client";
 
-import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, Monitor, Moon, Sun, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/(auth)/actions";
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { RelayLogo } from "@/components/brand/relay-brand";
 import { Tip } from "@/components/ui/tip";
 import { can, ROLE_LABELS, type Permission } from "@/lib/auth/roles";
 import { useRealtimeStatus } from "@/lib/realtime";
+import { useTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const NAV: { href: string; label: string; permission?: Permission }[] = [
@@ -25,6 +26,7 @@ export function AppNav({ attentionCount }: { attentionCount: number }) {
   const pathname = usePathname();
   const user = useSession();
   const live = useRealtimeStatus();
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">
@@ -71,6 +73,23 @@ export function AppNav({ attentionCount }: { attentionCount: number }) {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href="/account" />}>Account & password</DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Theme</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent sideOffset={6} alignOffset={-5} className="min-w-36">
+                <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+                  <DropdownMenuRadioItem value="light" closeOnClick>
+                    <Sun /> Light
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dark" closeOnClick>
+                    <Moon /> Dark
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="system" closeOnClick>
+                    <Monitor /> System
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
             <form action={signOut}>
               <DropdownMenuItem render={<button type="submit" className="w-full" />}>
                 <LogOut /> Sign out

@@ -25,6 +25,7 @@ import { StatusChip } from "./task-chips";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "./task-options";
 import { TaskAttachments } from "./task-attachments";
 import { TaskComments } from "./task-comments";
+import { openInSlack } from "@/lib/slack-link";
 
 // OptionSelect needs a real value for "no parent", so the form keeps "" and the select uses this.
 const NO_PARENT = "none";
@@ -291,7 +292,7 @@ function DrawerBody({ task, team, onClose }: { task: Task; team: TeamMember[]; o
         <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span>{formatDateTime(task.task_date)}</span>
           {task.slack_url ? (
-            <a href={task.slack_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-foreground underline-offset-4 hover:underline">
+            <a href={task.slack_url} target="_blank" rel="noreferrer" onClick={(event) => openInSlack(event, task.slack_url!)} className="inline-flex items-center gap-1 text-foreground underline-offset-4 hover:underline">
               Open in Slack <ExternalLink className="size-3" aria-hidden />
             </a>
           ) : null}

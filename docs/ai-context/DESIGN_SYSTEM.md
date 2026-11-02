@@ -55,8 +55,9 @@ Never use these without a specific product reason:
 
 ## 4. Theme
 
-- **Light theme only for now.** The Refero style defines no dark mode.
-- A dark theme is a future, owner-approved addition. **Do not invent dark values.**
+- **Light and dark** (owner-approved 2026-11-02). Light is the default. The viewer picks Light, Dark or System in **account menu → Theme**; the choice is kept per browser (`relay-theme`) and applied before first paint.
+- Dark values live only in the `.dark` block of `globals.css`: canvas `#0e0e0e`, sidebar `#121212`, cards `#151515`, popovers `#1b1b1b`, hairlines `#262626`, text `#fafafa`. Ember is unchanged. The neutral names keep their roles (Graphite = strong secondary text, Stone = hairline), only their values flip.
+- Components use semantic tokens only, so they follow the theme for free. `dark:` utilities follow the `.dark` class, not the OS. Do not add raw hex or per-theme colors in components.
 
 ---
 

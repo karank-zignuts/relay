@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { TaskDrawer } from "@/features/tasks/components/task-drawer";
 import { useAppSettings, useAttention, useDismissReply, useTask, useTeam } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
+import { openInSlack } from "@/lib/slack-link";
 
 type Tab = "all" | "forgotten";
 
@@ -105,7 +106,7 @@ export function AttentionList() {
                 </p>
               </div>
               {task.slack_url ? (
-                <a href={task.slack_url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <a href={task.slack_url} target="_blank" rel="noreferrer" onClick={(event) => openInSlack(event, task.slack_url!)} className={buttonVariants({ variant: "outline", size: "sm" })}>
                   Reply in Slack <ExternalLink />
                   <span className="sr-only">(opens in a new tab)</span>
                 </a>

@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* `dark:` follows the .dark class on <html> (set by ThemeProvider), not the OS setting. */
+@custom-variant dark (&:is(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -57,7 +60,7 @@
 }
 
 :root {
-  /* Refero style (see docs/ai-context/DESIGN_SYSTEM.md). Light theme only. */
+  /* Refero style (see docs/ai-context/DESIGN_SYSTEM.md). Light is the default; the dark values are in .dark below. */
   --background: #fdfcfc;
   --foreground: #000000;
   --card: #fdfcfc;
@@ -93,6 +96,47 @@
   --graphite: #44403b;
   --ash: #a59f97;
   --stone: #ebe8e4;
+  --ember: #ff4704;
+}
+
+/* Dark theme: near-black neutral surfaces that step up in lightness (canvas, sidebar and cards, popovers), hairline borders, Ember unchanged.
+   The neutral names keep their meaning, so Graphite is still the strong secondary text and Stone the hairline, just inverted in value. */
+.dark {
+  color-scheme: dark;
+  --background: #0e0e0e;
+  --foreground: #fafafa;
+  --card: #151515;
+  --card-foreground: #fafafa;
+  --popover: #1b1b1b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #0e0e0e;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #fafafa;
+  --muted: #1a1a1a;
+  --muted-foreground: #9a9a9a;
+  --accent: #232323;
+  --accent-foreground: #fafafa;
+  --destructive: #ff4704;
+  --border: #262626;
+  --input: #2e2e2e;
+  --ring: #d4d4d4;
+  --chart-1: #d4d4d4;
+  --chart-2: #9a9a9a;
+  --chart-3: #6b6b6b;
+  --chart-4: #2e2e2e;
+  --chart-5: #1a1a1a;
+  --sidebar: #121212;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #0e0e0e;
+  --sidebar-accent: #232323;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #262626;
+  --sidebar-ring: #d4d4d4;
+  --graphite: #cfcfcf;
+  --ash: #7d7d7d;
+  --stone: #2a2a2a;
   --ember: #ff4704;
 }
 

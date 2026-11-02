@@ -1,8 +1,8 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { History, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronRight, History, Search, X } from "lucide-react";
+import { useId, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { useSession } from "@/components/session-provider";
@@ -17,6 +17,7 @@ import { parseIsoDate } from "@/lib/calendar";
 import { formatDateTime, initials } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { useDebounced } from "@/lib/use-debounced";
+import type { Tables } from "@/types/database";
 import { useNow } from "@/lib/use-now";
 
 const PAGE = 50;
@@ -87,6 +88,72 @@ function TimeField({ label, value, onChange, placeholder }: { label: string; val
   return <Input aria-label={label} aria-invalid={invalid || undefined} inputMode="numeric" maxLength={5} placeholder={placeholder} className="w-[4.5rem] text-center font-mono tabular-nums" value={value} onChange={(event) => onChange(event.target.value)} />;
 }
 
+type Entry = Tables<"activity_log">;
+
+const timeOf = (iso: string) => new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+
+function ActivityRow({ entry, nested }: { entry: Entry; nested?: boolean }) {
+  return (
+    <li className={`flex items-center gap-3 py-3 pr-4 text-sm transition-colors hover:bg-secondary/60 ${nested ? "pl-8" : "pl-4"}`} data-testid="activity-row">
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-stone text-[10px] font-medium text-graphite" aria-hidden>
+        {initials(entry.actor_label)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="font-medium">{entry.actor_label}</span> <span className="text-graphite">{entry.summary}</span>
+      </span>
+      <Tip label={formatDateTime(entry.created_at)}>
+        <time dateTime={entry.created_at} className="shrink-0 font-mono text-xs text-muted-foreground">
+          {timeOf(entry.created_at)}
+        </time>
+      </Tip>
+    </li>
+  );
+}
+
+/** A run of entries with no person behind them (Claude's syncs and API edits), folded into one row that starts closed. */
+function SystemRun({ items }: { items: Entry[] }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const newest = items[0].created_at;
+  const oldest = items[items.length - 1].created_at;
+  return (
+    <li data-testid="activity-run">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-secondary/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+      >
+        <ChevronRight className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="font-medium">Claude &amp; system</span> <span className="text-graphite">{items.length} updates</span>
+        </span>
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">{timeOf(oldest) === timeOf(newest) ? timeOf(newest) : `${timeOf(oldest)}–${timeOf(newest)}`}</span>
+      </button>
+      {open ? (
+        <ul id={id} className="divide-y divide-border border-t border-border">
+          {items.map((entry) => (
+            <ActivityRow key={entry.id} entry={entry} nested />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
+/** Consecutive no-actor entries become one run; everything else stays a plain row. */
+function foldRuns(items: Entry[]): (Entry | Entry[])[] {
+  const out: (Entry | Entry[])[] = [];
+  for (const entry of items) {
+    const last = out[out.length - 1];
+    if (entry.actor_id !== null) out.push(entry);
+    else if (Array.isArray(last)) last.push(entry);
+    else out.push([entry]);
+  }
+  return out;
+}
+
 export function ActivityFeed() {
   const viewer = useSession();
   const { data: team = [] } = useTeam();
@@ -155,10 +222,14 @@ export function ActivityFeed() {
         <h1 className="text-2xl font-light leading-none tracking-[-0.02em]">Activity</h1>
         <p className="text-sm text-muted-foreground">Everything that happened in Relay, newest first.</p>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2" data-testid="activity-filters">
-        <OptionSelect aria-label="Activity type" className="w-44" value={group} onValueChange={setGroup} options={GROUPS} />
+      <div className="flex shrink-0 flex-wrap items-center gap-2" data-testid="activity-filters" role="search" aria-label="Filter activity">
+        <div className="relative w-full sm:w-80">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input aria-label="Search activity" placeholder="Search who or what…" className="h-9 rounded-full pr-3 pl-9" value={search} onChange={(event) => setSearch(event.target.value)} />
+        </div>
+        <OptionSelect variant="pill" aria-label="Activity type" className="w-44" value={group} onValueChange={setGroup} options={GROUPS} />
         <MultiSelectFilter label="People" options={peopleOptions} selected={people} onChange={setPeople} />
-        <OptionSelect aria-label="Time range" className="w-40" value={when} onValueChange={setWhen} options={WHEN} />
+        <OptionSelect variant="pill" aria-label="Time range" className="w-40" value={when} onValueChange={setWhen} options={WHEN} />
         {when === "custom" ? (
           <div className="flex flex-wrap items-center gap-1.5" data-testid="custom-range">
             <DatePicker aria-label="From date" placeholder="From date" className="w-36" value={custom.fromDate} onValueChange={setCustomField("fromDate")} />
@@ -168,7 +239,6 @@ export function ActivityFeed() {
             <TimeField label="To time" placeholder="23:59" value={custom.toTime} onChange={setCustomField("toTime")} />
           </div>
         ) : null}
-        <Input aria-label="Search activity" placeholder="Search who or what…" className="w-56" value={search} onChange={(event) => setSearch(event.target.value)} />
         {filtered ? (
           <Button variant="ghost" size="sm" onClick={clear}>
             <X /> Clear filters
@@ -209,21 +279,7 @@ export function ActivityFeed() {
               {/* Sticks to the top while its day scrolls, so you always know which date you are reading. The next day's header takes over when it arrives. */}
               <h2 className="sticky top-0 z-10 bg-background px-1 pt-1 pb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase" data-testid="activity-day">{day}</h2>
               <ul className="divide-y divide-border overflow-hidden rounded-[20px] border border-border bg-background">
-                {items.map((entry) => (
-                  <li key={entry.id} className="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-secondary/60" data-testid="activity-row">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-stone text-[10px] font-medium text-graphite" aria-hidden>
-                      {initials(entry.actor_label)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="font-medium">{entry.actor_label}</span> <span className="text-graphite">{entry.summary}</span>
-                    </span>
-                    <Tip label={formatDateTime(entry.created_at)}>
-                      <time dateTime={entry.created_at} className="shrink-0 font-mono text-xs text-muted-foreground">
-                        {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(entry.created_at))}
-                      </time>
-                    </Tip>
-                  </li>
-                ))}
+                {foldRuns(items).map((part) => (Array.isArray(part) ? <SystemRun key={part[0].id} items={part} /> : <ActivityRow key={part.id} entry={part} />))}
               </ul>
             </section>
           ))}

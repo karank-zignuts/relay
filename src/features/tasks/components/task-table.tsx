@@ -20,6 +20,7 @@ import { attachmentCount, commentCount, type Task, type TeamMember } from "../ty
 import { AreaTags, EnvStrip, TagList } from "./task-chips";
 import { AssigneeCell, ModuleCell, PriorityCell, StatusCell } from "./task-cells";
 import { COLUMNS, COLUMNS_KEY, DEFAULT_HIDDEN, DENSITY_KEY } from "./table-columns";
+import { openInSlack } from "@/lib/slack-link";
 
 export const PAGE_SIZES = [25, 50, 100] as const;
 
@@ -356,7 +357,7 @@ function renderCell(id: string, task: Task, team: Map<string, TeamMember>, membe
       return <ModuleCell task={task} />;
     case "slack":
       return task.slack_url ? (
-        <a href={task.slack_url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-1 text-graphite underline-offset-4 transition-colors hover:text-foreground hover:underline">
+        <a href={task.slack_url} target="_blank" rel="noreferrer" onClick={(event) => { event.stopPropagation(); openInSlack(event, task.slack_url!); }} className="inline-flex items-center gap-1 text-graphite underline-offset-4 transition-colors hover:text-foreground hover:underline">
           Slack <ExternalLink className="size-3" aria-hidden />
           <span className="sr-only">(opens in a new tab)</span>
         </a>
