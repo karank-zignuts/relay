@@ -10,34 +10,60 @@
 <body style="margin:0;padding:0;background:#f5f3f1;-webkit-text-size-adjust:100%;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Accept your invitation and choose a password.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f3f1" style="background:#f5f3f1;">
-  <tr><td align="center" style="padding:40px 16px 48px;">
-    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
-      <tr><td style="padding:0 6px 20px;font:600 24px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.03em;color:#000000;"><a href="{{ .SiteURL }}" style="text-decoration:none;color:#000000;"><img src="{{ .SiteURL }}/brand/relay-logo.png" alt="Relay" width="120" height="34" style="display:block;border:0;outline:none;width:120px;height:34px;font:600 24px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;"></a></td></tr>
-      <tr><td bgcolor="#fdfcfc" style="background:#fdfcfc;border:1px solid #ebe8e4;border-radius:20px;padding:40px 36px;">
-        <h1 style="margin:0 0 20px;font:300 30px/1.15 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.02em;color:#000000;">You're invited to Relay</h1>
+  <tr><td align="center" style="padding:32px 12px 40px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" bgcolor="#fdfcfc" style="width:100%;max-width:560px;background:#fdfcfc;border:1px solid #ebe8e4;border-radius:24px;overflow:hidden;">
+      <tr><td bgcolor="#171615" style="background:#171615;padding:30px 36px 6px;"><a href="{{ .SiteURL }}" style="text-decoration:none;"><img src="{{ .SiteURL }}/brand/email/logo-light.png" alt="Relay" width="112" height="32" style="display:block;border:0;outline:none;width:112px;height:32px;font:600 22px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fdfcfc;"></a></td></tr>
+      <tr><td bgcolor="#171615" style="background:#171615;font-size:0;line-height:0;"><img src="{{ .SiteURL }}/brand/email/hero-invite.png" alt="" width="560" style="display:block;border:0;width:100%;max-width:560px;height:auto;"></td></tr>
+      <tr><td style="padding:6px 40px 40px;">
+        <h1 style="margin:0 0 18px;font:600 30px/1.15 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-0.025em;color:#000000;">Join your team on <span style="border-bottom:3px solid #ff4704;padding-bottom:1px;">Relay</span></h1>
         
         <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">{{ if .Data.full_name }}Hi {{ .Data.full_name }},{{ else }}Hi,{{ end }}</p>
-        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">You have been invited to join your team on <strong style="color:#000000;">Relay</strong>, where client requests from Slack are tracked, assigned and never forgotten.</p>
+        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;">You have been invited to collaborate on client requests in <strong style="color:#000000;">Relay</strong>, where every message from your client's Slack channel is tracked, assigned and followed up.</p>
         {{ if .Data.role }}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px;background:#f5f3f1;border-radius:12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px;background:#f5f3f1;border-radius:14px;">
   <tr><td style="padding:16px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:3px 0;font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;width:96px;">Your role</td><td style="padding:3px 0;font:500 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">{{ if eq .Data.role "super_admin" }}Super Admin{{ else if eq .Data.role "project_manager" }}Project Manager{{ else if eq .Data.role "developer" }}Developer{{ else if eq .Data.role "tester" }}Tester{{ end }}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:3px 0;font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;width:96px;">Account</td><td style="padding:3px 0;font:500 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">{{ .Email }}</td></tr></table></td></tr>
 </table>{{ end }}
         
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 0;">
+  <tr>
+    <td width="32%" valign="top" bgcolor="#f5f3f1" style="background:#f5f3f1;border-radius:14px;padding:16px 12px;text-align:center;">
+      <img src="{{ .SiteURL }}/brand/email/ico-hash.png" alt="" width="26" height="26" style="display:block;margin:0 auto 10px;border:0;width:26px;height:26px;">
+      <span style="font:500 13px/1.35 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">From Slack<br>to tasks</span>
+    </td><td width="8" style="font-size:0;line-height:0;">&nbsp;</td>
+    <td width="32%" valign="top" bgcolor="#f5f3f1" style="background:#f5f3f1;border-radius:14px;padding:16px 12px;text-align:center;">
+      <img src="{{ .SiteURL }}/brand/email/ico-layers.png" alt="" width="26" height="26" style="display:block;margin:0 auto 10px;border:0;width:26px;height:26px;">
+      <span style="font:500 13px/1.35 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">Assign<br>and track</span>
+    </td><td width="8" style="font-size:0;line-height:0;">&nbsp;</td>
+    <td width="32%" valign="top" bgcolor="#f5f3f1" style="background:#f5f3f1;border-radius:14px;padding:16px 12px;text-align:center;">
+      <img src="{{ .SiteURL }}/brand/email/ico-bell.png" alt="" width="26" height="26" style="display:block;margin:0 auto 10px;border:0;width:26px;height:26px;">
+      <span style="font:500 13px/1.35 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#000000;">Spot what needs attention</span>
+    </td>
+  </tr>
+</table>
+        
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 14px;">
   <tr><td align="center" bgcolor="#000000" style="border-radius:999px;background:#000000;">
-    <a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" target="_blank" style="display:inline-block;padding:15px 30px;font:500 15px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fdfcfc;text-decoration:none;border-radius:999px;mso-padding-alt:0;">Accept invitation</a>
+    <a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" target="_blank" style="display:block;padding:18px 24px;font:500 16px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fdfcfc;text-decoration:none;border-radius:999px;">Accept invitation&nbsp;&nbsp;&rarr;</a>
   </td></tr>
 </table>
-        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;margin-top:16px;">You will choose a password, then sign in. The link works once, so open it yourself rather than forwarding it.</p>
+        <p style="margin:0 0 4px;text-align:center;font:400 13px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">You will choose a password, then sign in. The link works once and expires, so open it yourself.</p>
         
-<p style="margin:20px 0 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">Button not working? Copy this link into your browser:</p>
+<p style="margin:22px 0 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">Button not working? Copy this link into your browser:</p>
 <p style="margin:4px 0 0;font:400 12px/1.5 'SFMono-Regular',Menlo,Consolas,monospace;color:#44403b;word-break:break-all;"><a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" style="color:#44403b;text-decoration:underline;">{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite</a></p>
-        <hr style="border:0;border-top:1px solid #ebe8e4;margin:28px 0 16px;">
-        <p style="margin:0 0 16px;font:400 15px/1.65 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#44403b;font-size:13px;color:#777169;margin:0;">Not expecting this? You can safely ignore this email. Nothing happens until the link is used.</p>
+        
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:26px;border-top:1px solid #ebe8e4;">
+  <tr>
+    <td width="36" valign="top" style="padding:20px 12px 0 0;"><img src="{{ .SiteURL }}/brand/email/ico-info.png" alt="" width="22" height="22" style="display:block;border:0;width:22px;height:22px;"></td>
+    <td valign="top" style="padding:20px 0 0;font:400 13px/1.55 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;"><strong style="font-weight:600;color:#000000;">Not expecting this?</strong><br>You can safely ignore this email. Nothing happens until the link is used.</td>
+  </tr>
+</table>
       </td></tr>
-      <tr><td style="padding:20px 6px 0;font:400 12px/1.6 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">
-        Sent by Relay to {{ .Email }}.<br>
-        Relay turns your client's Slack channel into a task board your whole team can see.
+    </table>
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+      <tr><td style="padding:22px 12px 0;text-align:center;font:400 12px/1.7 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#777169;">
+        <img src="{{ .SiteURL }}/brand/email/mark.png" alt="" width="22" height="22" style="display:inline-block;border:0;width:22px;height:22px;margin-bottom:8px;"><br>
+        <strong style="font-weight:500;color:#44403b;">Every client message, tracked. Nothing forgotten.</strong><br>
+        Sent by Relay to {{ .Email }}.
       </td></tr>
     </table>
   </td></tr>
